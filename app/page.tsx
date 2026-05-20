@@ -1,464 +1,828 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
+import { Suspense } from "react";
 import {
-  getMockCricketMatches,
-  getMockFootballMatches,
-  getMockMovies,
-  getMockShows,
-} from "@/lib/api/sports";
+  getTrendingMovies,
+  getTrendingShows,
+  getNowPlayingMovies,
+  getTopRatedMovies,
+  getMoviesByGenre,
+  POSTER,
+  BACKDROP,
+} from "@/lib/api/tmdb";
+import { getMockCricketMatches, getMockFootballMatches } from "@/lib/api/sports";
+import { JsonLd } from "@/components/seo/json-ld";
 
 export const metadata: Metadata = {
   title: "LiveStreamTV.pk — Live Cricket, Football Scores & Streaming Guide",
   description:
-    "Watch live cricket scores, football results, and find where to stream movies & TV shows. Pakistan's #1 sports and entertainment hub.",
+    "Watch live cricket scores, football results, and find where to stream movies & TV shows online. Pakistan's #1 sports and entertainment hub.",
+  openGraph: {
+    title: "LiveStreamTV.pk — Live Sports & Streaming Guide",
+    description: "Live cricket scores, football results, and streaming guides for movies & TV shows.",
+    type: "website",
+    url: "https://livestreamtv.pk",
+    images: [{ url: "https://livestreamtv.pk/og-image.jpg", width: 1200, height: 630 }],
+  },
 };
 
-const countryFlags: Record<string, string> = {
-  Pakistan: "🇵🇰",
-  India: "🇮🇳",
-  England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  Australia: "🇦🇺",
-  "South Africa": "🇿🇦",
-  "New Zealand": "🇳🇿",
-  "West Indies": "🏝️",
-  "Sri Lanka": "🇱🇰",
-};
+// ── SKELETON COMPONENTS ──
 
-const movieGradients = [
-  "from-red-950 to-orange-950",
-  "from-blue-950 to-indigo-950",
-  "from-purple-950 to-pink-950",
-  "from-green-950 to-teal-950",
-  "from-amber-950 to-yellow-950",
-  "from-cyan-950 to-blue-950",
-];
+function SkeletonPosterRow() {
+  return (
+    <div className="scroll-row">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} style={{ flexShrink: 0, width: 150 }}>
+          <div className="skeleton" style={{ width: 150, height: 225, borderRadius: 10 }} />
+          <div className="skeleton" style={{ width: "80%", height: 12, marginTop: 8, borderRadius: 4 }} />
+          <div className="skeleton" style={{ width: "50%", height: 10, marginTop: 4, borderRadius: 4 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
-const showGradients = [
-  "from-indigo-950 to-purple-950",
-  "from-red-950 to-rose-950",
-  "from-teal-950 to-green-950",
-];
+// ── DATA SECTIONS ──
 
-const streamingColors: Record<string, string> = {
-  Netflix: "#dc2626",
-  "Disney+": "#1d4ed8",
-  "Amazon Prime": "#d97706",
-  "HBO Max": "#7e22ce",
-  "Paramount+": "#2563eb",
-  "Apple TV+": "#374151",
-  BBC: "#4b5563",
-};
+async function TrendingMoviesRow() {
+  const movies = await getTrendingMovies();
+  return (
+    <div className="scroll-row">
+      {movies.slice(0, 12).map((movie: {
+        id: number;
+        title: string;
+        poster_path: string | null;
+        vote_average: number;
+        release_date: string;
+      }) => {
+        const poster = POSTER(movie.poster_path);
+        const year = movie.release_date ? new Date(movie.release_date).getFullYear().toString() : "";
+        return (
+          <Link key={movie.id} href={`/movies/${movie.id}`} className="poster-card" aria-label={movie.title}>
+            <div
+              style={{
+                width: 150,
+                height: 225,
+                borderRadius: 10,
+                overflow: "hidden",
+                background: "#1c1c1c",
+                border: "1px solid #2a2a2a",
+                position: "relative",
+              }}
+            >
+              {poster ? (
+                <Image
+                  src={poster}
+                  alt={movie.title}
+                  width={150}
+                  height={225}
+                  style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                  sizes="150px"
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 12,
+                    textAlign: "center",
+                    background: `linear-gradient(135deg, hsl(${(movie.id * 47) % 360} 30% 15%), hsl(${(movie.id * 83) % 360} 30% 10%))`,
+                  }}
+                >
+                  <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">🎬</span>
+                  <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, lineHeight: 1.3 }}>{movie.title}</span>
+                </div>
+              )}
+              {/* Rating badge */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  background: "rgba(0,0,0,0.75)",
+                  backdropFilter: "blur(4px)",
+                  borderRadius: 4,
+                  padding: "2px 5px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
+                <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{movie.vote_average.toFixed(1)}</span>
+              </div>
+            </div>
+            <p style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{movie.title}</p>
+            {year && <p style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{year}</p>}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
-const features = [
-  {
-    emoji: "🏏",
-    title: "Live Cricket",
-    desc: "Ball-by-ball updates for Asia Cup, World Cup, Test Series and T20 leagues worldwide.",
-    href: "/cricket",
-    accent: "#10b981",
-    bg: "rgba(16,185,129,0.06)",
-    border: "rgba(16,185,129,0.15)",
-  },
-  {
-    emoji: "⚽",
-    title: "Football Scores",
-    desc: "Real-time scores from Premier League, La Liga, Champions League and 100+ competitions.",
-    href: "/football",
-    accent: "#f59e0b",
-    bg: "rgba(245,158,11,0.06)",
-    border: "rgba(245,158,11,0.15)",
-  },
-  {
-    emoji: "🎬",
-    title: "Movies Guide",
-    desc: "Instantly find which streaming platform hosts any movie — Netflix, Disney+, and more.",
-    href: "/movies",
-    accent: "#ec4899",
-    bg: "rgba(236,72,153,0.06)",
-    border: "rgba(236,72,153,0.15)",
-  },
-  {
-    emoji: "📡",
-    title: "Live TV",
-    desc: "100+ free live TV channels — sports, news, entertainment from Pakistan and worldwide.",
-    href: "/live-tv",
-    accent: "#7c3aed",
-    bg: "rgba(124,58,237,0.06)",
-    border: "rgba(124,58,237,0.15)",
-  },
-];
+async function TrendingShowsRow() {
+  const shows = await getTrendingShows();
+  return (
+    <div className="scroll-row">
+      {shows.slice(0, 12).map((show: {
+        id: number;
+        name: string;
+        poster_path: string | null;
+        vote_average: number;
+        first_air_date: string;
+      }) => {
+        const poster = POSTER(show.poster_path);
+        const year = show.first_air_date ? new Date(show.first_air_date).getFullYear().toString() : "";
+        return (
+          <Link key={show.id} href={`/tv-shows/${show.id}`} className="poster-card" aria-label={show.name}>
+            <div
+              style={{
+                width: 150,
+                height: 225,
+                borderRadius: 10,
+                overflow: "hidden",
+                background: "#1c1c1c",
+                border: "1px solid #2a2a2a",
+                position: "relative",
+              }}
+            >
+              {poster ? (
+                <Image
+                  src={poster}
+                  alt={show.name}
+                  width={150}
+                  height={225}
+                  style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                  sizes="150px"
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 12,
+                    textAlign: "center",
+                    background: `linear-gradient(135deg, hsl(${(show.id * 53) % 360} 30% 15%), hsl(${(show.id * 79) % 360} 30% 10%))`,
+                  }}
+                >
+                  <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">📺</span>
+                  <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, lineHeight: 1.3 }}>{show.name}</span>
+                </div>
+              )}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  background: "rgba(0,0,0,0.75)",
+                  backdropFilter: "blur(4px)",
+                  borderRadius: 4,
+                  padding: "2px 5px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
+                <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{show.vote_average.toFixed(1)}</span>
+              </div>
+            </div>
+            <p style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{show.name}</p>
+            {year && <p style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{year}</p>}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
-const stats = [
-  { value: "50+", label: "Live Matches / Day" },
-  { value: "10K+", label: "Movies & Shows" },
-  { value: "100+", label: "Live TV Channels" },
-];
+async function NowPlayingRow() {
+  const movies = await getNowPlayingMovies();
+  return (
+    <div className="scroll-row">
+      {movies.slice(0, 12).map((movie: {
+        id: number;
+        title: string;
+        poster_path: string | null;
+        vote_average: number;
+        release_date: string;
+      }) => {
+        const poster = POSTER(movie.poster_path);
+        return (
+          <Link key={movie.id} href={`/movies/${movie.id}`} className="poster-card" aria-label={movie.title}>
+            <div
+              style={{
+                width: 150,
+                height: 225,
+                borderRadius: 10,
+                overflow: "hidden",
+                background: "#1c1c1c",
+                border: "1px solid #2a2a2a",
+                position: "relative",
+              }}
+            >
+              {poster ? (
+                <Image src={poster} alt={movie.title} width={150} height={225} style={{ objectFit: "cover", width: "100%", height: "100%" }} sizes="150px" />
+              ) : (
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, textAlign: "center", background: `linear-gradient(135deg, hsl(${(movie.id * 61) % 360} 30% 15%), hsl(${(movie.id * 97) % 360} 30% 10%))` }}>
+                  <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">🎭</span>
+                  <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, lineHeight: 1.3 }}>{movie.title}</span>
+                </div>
+              )}
+              <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.75)", borderRadius: 4, padding: "2px 5px", display: "flex", alignItems: "center", gap: 2 }}>
+                <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
+                <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{movie.vote_average.toFixed(1)}</span>
+              </div>
+            </div>
+            <p style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{movie.title}</p>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
-export default function Home() {
-  const cricketMatches = getMockCricketMatches().filter((m) => m.status === "live");
-  const footballMatches = getMockFootballMatches().filter((m) => m.status === "live");
-  const movies = getMockMovies().slice(0, 6);
-  const shows = getMockShows().slice(0, 3);
+async function ActionMoviesRow() {
+  const movies = await getMoviesByGenre(28);
+  return (
+    <div className="scroll-row">
+      {movies.slice(0, 12).map((movie: {
+        id: number;
+        title: string;
+        poster_path: string | null;
+        vote_average: number;
+        release_date: string;
+      }) => {
+        const poster = POSTER(movie.poster_path);
+        return (
+          <Link key={movie.id} href={`/movies/${movie.id}`} className="poster-card" aria-label={movie.title}>
+            <div style={{ width: 150, height: 225, borderRadius: 10, overflow: "hidden", background: "#1c1c1c", border: "1px solid #2a2a2a", position: "relative" }}>
+              {poster ? (
+                <Image src={poster} alt={movie.title} width={150} height={225} style={{ objectFit: "cover", width: "100%", height: "100%" }} sizes="150px" />
+              ) : (
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, textAlign: "center", background: "linear-gradient(135deg, #1a0a0a, #0a0a1a)" }}>
+                  <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">💥</span>
+                  <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>{movie.title}</span>
+                </div>
+              )}
+              <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.75)", borderRadius: 4, padding: "2px 5px", display: "flex", alignItems: "center", gap: 2 }}>
+                <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
+                <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{movie.vote_average.toFixed(1)}</span>
+              </div>
+            </div>
+            <p style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{movie.title}</p>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+async function TopRatedRow() {
+  const movies = await getTopRatedMovies();
+  return (
+    <div className="scroll-row">
+      {movies.slice(0, 12).map((movie: {
+        id: number;
+        title: string;
+        poster_path: string | null;
+        vote_average: number;
+        release_date: string;
+      }) => {
+        const poster = POSTER(movie.poster_path);
+        return (
+          <Link key={movie.id} href={`/movies/${movie.id}`} className="poster-card" aria-label={movie.title}>
+            <div style={{ width: 150, height: 225, borderRadius: 10, overflow: "hidden", background: "#1c1c1c", border: "1px solid #2a2a2a", position: "relative" }}>
+              {poster ? (
+                <Image src={poster} alt={movie.title} width={150} height={225} style={{ objectFit: "cover", width: "100%", height: "100%" }} sizes="150px" />
+              ) : (
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, textAlign: "center", background: "linear-gradient(135deg, #0a1a0a, #1a1a0a)" }}>
+                  <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">🏆</span>
+                  <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>{movie.title}</span>
+                </div>
+              )}
+              <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.75)", borderRadius: 4, padding: "2px 5px", display: "flex", alignItems: "center", gap: 2 }}>
+                <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
+                <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{movie.vote_average.toFixed(1)}</span>
+              </div>
+            </div>
+            <p style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{movie.title}</p>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+async function HeroSection() {
+  const movies = await getTrendingMovies();
+  const hero = movies?.[0];
+  const backdropUrl = hero ? BACKDROP(hero.backdrop_path) : null;
+
+  return (
+    <section
+      style={{
+        position: "relative",
+        height: "70vh",
+        minHeight: 400,
+        display: "flex",
+        alignItems: "flex-end",
+        overflow: "hidden",
+      }}
+      aria-label="Featured movie hero"
+    >
+      {/* Background image */}
+      {backdropUrl ? (
+        <Image
+          src={backdropUrl}
+          alt={hero?.title ?? "Featured"}
+          fill
+          priority
+          style={{ objectFit: "cover", objectPosition: "center top" }}
+          sizes="100vw"
+        />
+      ) : (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(135deg, #1a0a0a 0%, #0a0a1a 50%, #0a1a0a 100%)",
+          }}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Gradient overlay */}
+      <div
+        className="hero-gradient"
+        style={{ position: "absolute", inset: 0 }}
+        aria-hidden="true"
+      />
+
+      {/* Content */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 10,
+          padding: "0 2rem 3rem",
+          maxWidth: 700,
+        }}
+      >
+        {hero ? (
+          <>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: "rgba(229,9,20,0.15)",
+                border: "1px solid rgba(229,9,20,0.3)",
+                borderRadius: 4,
+                padding: "3px 10px",
+                marginBottom: 12,
+              }}
+            >
+              <span className="live-dot" style={{ width: 6, height: 6, background: "#e50914", borderRadius: "50%", display: "inline-block" }} aria-hidden="true" />
+              <span style={{ fontSize: 10, fontWeight: 700, color: "#f87171", letterSpacing: "0.1em" }}>TRENDING TODAY</span>
+            </div>
+            <h1
+              style={{
+                fontSize: "clamp(1.8rem, 5vw, 3.5rem)",
+                fontWeight: 900,
+                color: "#ffffff",
+                lineHeight: 1.1,
+                marginBottom: 12,
+                textShadow: "0 2px 20px rgba(0,0,0,0.8)",
+              }}
+            >
+              {hero.title}
+            </h1>
+            {hero.overview && (
+              <p
+                style={{
+                  fontSize: 14,
+                  color: "#b3b3b3",
+                  maxWidth: 480,
+                  lineHeight: 1.6,
+                  marginBottom: 20,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {hero.overview}
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Link
+                href={`/movies/${hero.id}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 24px",
+                  background: "#e50914",
+                  color: "#ffffff",
+                  borderRadius: 6,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  textDecoration: "none",
+                  transition: "background 0.2s",
+                }}
+              >
+                ▶ Watch Now
+              </Link>
+              <Link
+                href={`/movies/${hero.id}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 24px",
+                  background: "rgba(255,255,255,0.15)",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  color: "#ffffff",
+                  borderRadius: 6,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  textDecoration: "none",
+                }}
+              >
+                ℹ More Info
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1
+              style={{
+                fontSize: "clamp(2rem, 5vw, 4rem)",
+                fontWeight: 900,
+                color: "#ffffff",
+                marginBottom: 16,
+                textShadow: "0 2px 20px rgba(0,0,0,0.8)",
+              }}
+            >
+              <span style={{ color: "#e50914" }}>LiveStream</span>TV.pk
+            </h1>
+            <p style={{ color: "#b3b3b3", fontSize: 16, marginBottom: 20 }}>
+              Pakistan&apos;s #1 sports and streaming guide
+            </p>
+            <Link
+              href="/movies"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 24px",
+                background: "#e50914",
+                color: "#ffffff",
+                borderRadius: 6,
+                fontWeight: 700,
+                fontSize: 14,
+                textDecoration: "none",
+              }}
+            >
+              Explore Movies
+            </Link>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ── MAIN PAGE ──
+
+export default async function Home() {
+  const cricketMatches = getMockCricketMatches();
+  const footballMatches = getMockFootballMatches();
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "LiveStreamTV.pk",
+    url: "https://livestreamtv.pk",
+    description: "Pakistan's #1 sports and entertainment streaming guide",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: "https://livestreamtv.pk/search?q={search_term_string}" },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
+  const liveCricket = cricketMatches.filter((m) => m.status === "live");
+  const liveFootball = footballMatches.filter((m) => m.status === "live");
+
+  const countryFlags: Record<string, string> = {
+    Pakistan: "🇵🇰", India: "🇮🇳", England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", Australia: "🇦🇺",
+    "South Africa": "🇿🇦", "New Zealand": "🇳🇿", "West Indies": "🏝️", "Sri Lanka": "🇱🇰",
+  };
 
   return (
     <>
+      <JsonLd data={websiteJsonLd} />
+
       {/* ── HERO ── */}
-      <section
-        className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden"
-        aria-label="Hero"
+      <Suspense
+        fallback={
+          <div
+            style={{
+              height: "70vh",
+              minHeight: 400,
+              background: "linear-gradient(135deg, #1a0a0a, #0a0a0a)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div className="skeleton" style={{ width: 300, height: 48 }} />
+          </div>
+        }
       >
-        {/* Background radial glow */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.18) 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 40% 40% at 20% 60%, rgba(96,165,250,0.06) 0%, transparent 60%)",
-          }}
-        />
+        <HeroSection />
+      </Suspense>
 
-        <div className="relative max-w-4xl mx-auto">
-          {/* Live badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" }}>
-            <span className="live-dot w-2 h-2 bg-red-500 rounded-full" aria-hidden="true" />
-            <span className="text-xs font-bold text-red-400 tracking-wider">LIVE NOW</span>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 1rem" }}>
+
+        {/* ── LIVE NOW ── */}
+        <section style={{ paddingTop: "3rem", paddingBottom: "3rem" }} aria-label="Live matches">
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <span className="live-dot" style={{ width: 12, height: 12, background: "#e50914", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} aria-hidden="true" />
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
+              Live Now
+            </h2>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white leading-tight mb-4">
-            Watch Every
-            <br />
-            <span className="gradient-text">Live Match</span>
-            <br />
-            <span className="text-white">& Stream Anything.</span>
-          </h1>
-
-          <p className="text-lg md:text-xl mb-10 max-w-2xl mx-auto" style={{ color: "#9ca3af" }}>
-            Pakistan&apos;s #1 hub for live cricket scores, football results, and the definitive
-            guide to movies &amp; TV shows — all in one place, always free.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Link
-              href="/cricket"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-white font-bold text-base transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500"
-              style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
-            >
-              🏏 Live Cricket
-            </Link>
-            <Link
-              href="/movies"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-base transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid #1e1e2e",
-                color: "#fff",
-              }}
-            >
-              🎬 Streaming Guide
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="text-2xl md:text-3xl font-black gradient-text">{s.value}</div>
-                <div className="text-xs md:text-sm mt-1" style={{ color: "#9ca3af" }}>
-                  {s.label}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: 16,
+            }}
+          >
+            {/* Cricket live cards */}
+            {liveCricket.map((match) => (
+              <Link
+                key={match.id}
+                href="/cricket"
+                style={{
+                  display: "block",
+                  background: "#1c1c1c",
+                  border: "1px solid #2a2a2a",
+                  borderRadius: 12,
+                  padding: 16,
+                  textDecoration: "none",
+                  transition: "border-color 0.2s",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(229,9,20,0.15)", border: "1px solid rgba(229,9,20,0.3)", color: "#f87171", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                    <span className="live-dot" style={{ width: 6, height: 6, background: "#e50914", borderRadius: "50%", display: "inline-block" }} />
+                    LIVE
+                  </div>
+                  <span style={{ background: "rgba(0,112,243,0.12)", border: "1px solid rgba(0,112,243,0.25)", color: "#60a5fa", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>
+                    {match.format}
+                  </span>
                 </div>
-              </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{countryFlags[match.teams.home.name] ?? ""} {match.teams.home.name}</p>
+                    <p style={{ fontSize: 20, fontWeight: 900, color: "#00b341" }}>{match.teams.home.score}</p>
+                    <p style={{ fontSize: 11, color: "#6b7280" }}>{match.teams.home.overs} ov</p>
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: "#6b7280" }}>VS</span>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{match.teams.away.name} {countryFlags[match.teams.away.name] ?? ""}</p>
+                    <p style={{ fontSize: 20, fontWeight: 900, color: "#b3b3b3" }}>{match.teams.away.score}</p>
+                    <p style={{ fontSize: 11, color: "#6b7280" }}>{match.teams.away.overs} ov</p>
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: "#6b7280" }}>🏆 {match.tournament}</p>
+              </Link>
+            ))}
+
+            {/* Football live cards */}
+            {liveFootball.map((match) => (
+              <Link
+                key={match.id}
+                href="/football"
+                style={{
+                  display: "block",
+                  background: "#1c1c1c",
+                  border: "1px solid #2a2a2a",
+                  borderRadius: 12,
+                  padding: 16,
+                  textDecoration: "none",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#f5c518" }}>{match.leagueLogo} {match.league}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(0,179,65,0.12)", border: "1px solid rgba(0,179,65,0.3)", color: "#34d399", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                    <span className="live-dot" style={{ width: 6, height: 6, background: "#00b341", borderRadius: "50%", display: "inline-block" }} />
+                    {match.minute}&apos;
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{match.homeTeam}</p>
+                  <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 72 }}>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>{match.homeScore} – {match.awayScore}</span>
+                  </div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", textAlign: "right" }}>{match.awayTeam}</p>
+                </div>
+              </Link>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── LIVE NOW ── */}
-      <section className="max-w-7xl mx-auto px-4 pb-16" aria-label="Live matches">
-        <div className="section-divider mb-12" />
-
-        <div className="flex items-center gap-3 mb-8">
-          <span className="live-dot w-3 h-3 bg-red-500 rounded-full" aria-hidden="true" />
-          <h2 className="text-2xl font-black text-white">Live Now</h2>
-        </div>
-
-        {/* Ad slot */}
-        <div className="ad-slot mb-8" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {/* Cricket live cards */}
-          {cricketMatches.map((match) => (
-            <Link
-              key={match.id}
-              href="/cricket"
-              className="block card-hover rounded-xl p-5 cursor-pointer"
-              style={{ background: "#141422", border: "1px solid #1e1e2e" }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                  style={{
-                    background: "rgba(239,68,68,0.12)",
-                    border: "1px solid rgba(239,68,68,0.3)",
-                    color: "#f87171",
-                  }}
-                >
-                  <span className="live-dot w-1.5 h-1.5 bg-red-400 rounded-full" />
-                  LIVE
-                </div>
-                <span
-                  className="text-xs font-bold px-2 py-0.5 rounded"
-                  style={{ background: "rgba(124,58,237,0.15)", color: "#a78bfa" }}
-                >
-                  {match.format}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 items-center gap-2 mb-3">
-                <div>
-                  <p className="text-sm font-bold text-white">
-                    {countryFlags[match.teams.home.name] ?? ""} {match.teams.home.name}
-                  </p>
-                  <p className="text-xl font-black" style={{ color: "#10b981" }}>
-                    {match.teams.home.score}
-                  </p>
-                  <p className="text-xs" style={{ color: "#9ca3af" }}>
-                    {match.teams.home.overs} ov
-                  </p>
-                </div>
-                <div className="text-center">
-                  <span className="text-xs font-black" style={{ color: "#9ca3af" }}>
-                    VS
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-white">
-                    {match.teams.away.name} {countryFlags[match.teams.away.name] ?? ""}
-                  </p>
-                  <p className="text-xl font-black" style={{ color: "#d1d5db" }}>
-                    {match.teams.away.score}
-                  </p>
-                  <p className="text-xs" style={{ color: "#9ca3af" }}>
-                    {match.teams.away.overs} ov
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs truncate" style={{ color: "#9ca3af" }}>
-                🏆 {match.tournament}
-              </p>
+        {/* ── TRENDING MOVIES ── */}
+        <section style={{ paddingBottom: "3rem" }} aria-label="Trending movies">
+          <div className="section-divider" style={{ marginBottom: "2rem" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
+              🎬 Trending <span className="gradient-text">Movies</span>
+            </h2>
+            <Link href="/movies" style={{ fontSize: 13, fontWeight: 700, color: "#e50914", textDecoration: "none" }}>
+              See All →
             </Link>
-          ))}
+          </div>
+          <Suspense fallback={<SkeletonPosterRow />}>
+            <TrendingMoviesRow />
+          </Suspense>
+        </section>
 
-          {/* Football live cards */}
-          {footballMatches.map((match) => (
-            <Link
-              key={match.id}
-              href="/football"
-              className="block card-hover rounded-xl p-5 cursor-pointer"
-              style={{ background: "#141422", border: "1px solid #1e1e2e" }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-semibold" style={{ color: "#fcd34d" }}>
-                  {match.leagueLogo} {match.league}
-                </span>
-                <div
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                  style={{
-                    background: "rgba(16,185,129,0.12)",
-                    border: "1px solid rgba(16,185,129,0.3)",
-                    color: "#34d399",
-                  }}
-                >
-                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full live-dot" />
-                  {match.minute}&apos;
-                </div>
-              </div>
-              <div className="grid grid-cols-3 items-center gap-2">
-                <p className="text-sm font-bold text-white">{match.homeTeam}</p>
-                <div
-                  className="text-center py-2 rounded-lg"
-                  style={{ background: "rgba(255,255,255,0.06)" }}
-                >
-                  <span className="text-2xl font-black text-white">
-                    {match.homeScore} – {match.awayScore}
-                  </span>
-                </div>
-                <p className="text-sm font-bold text-white text-right">{match.awayTeam}</p>
-              </div>
+        {/* ── TRENDING SHOWS ── */}
+        <section style={{ paddingBottom: "3rem" }} aria-label="Trending TV shows">
+          <div className="section-divider" style={{ marginBottom: "2rem" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
+              📺 Trending <span className="gradient-text-blue">Shows</span>
+            </h2>
+            <Link href="/tv-shows" style={{ fontSize: 13, fontWeight: 700, color: "#0070f3", textDecoration: "none" }}>
+              See All →
             </Link>
-          ))}
-        </div>
-      </section>
+          </div>
+          <Suspense fallback={<SkeletonPosterRow />}>
+            <TrendingShowsRow />
+          </Suspense>
+        </section>
 
-      {/* ── FEATURES GRID ── */}
-      <section className="max-w-7xl mx-auto px-4 pb-16" aria-label="Features">
-        <div className="section-divider mb-12" />
-        <h2 className="text-2xl font-black text-white mb-8">What We Cover</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {features.map((f) => (
-            <Link
-              key={f.href}
-              href={f.href}
-              className="block card-hover rounded-xl p-6 group"
-              style={{
-                background: f.bg,
-                border: `1px solid ${f.border}`,
-              }}
-            >
-              <div className="text-4xl mb-4">{f.emoji}</div>
-              <h3 className="text-lg font-black text-white mb-2">{f.title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: "#9ca3af" }}>
-                {f.desc}
-              </p>
-              <div
-                className="mt-4 text-xs font-bold inline-flex items-center gap-1"
-                style={{ color: f.accent }}
+        {/* ── AD SLOT 1 ── */}
+        <div className="ad-slot" style={{ height: 90, margin: "0 0 3rem" }}>Advertisement</div>
+
+        {/* ── NOW IN CINEMAS ── */}
+        <section style={{ paddingBottom: "3rem" }} aria-label="Now in cinemas">
+          <div className="section-divider" style={{ marginBottom: "2rem" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
+              🎭 Now in Cinemas
+            </h2>
+          </div>
+          <Suspense fallback={<SkeletonPosterRow />}>
+            <NowPlayingRow />
+          </Suspense>
+        </section>
+
+        {/* ── ACTION MOVIES ── */}
+        <section style={{ paddingBottom: "3rem" }} aria-label="Action movies">
+          <div className="section-divider" style={{ marginBottom: "2rem" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
+              💥 Action Movies
+            </h2>
+            <Link href="/movies?genre=28" style={{ fontSize: 13, fontWeight: 700, color: "#e50914", textDecoration: "none" }}>
+              See All →
+            </Link>
+          </div>
+          <Suspense fallback={<SkeletonPosterRow />}>
+            <ActionMoviesRow />
+          </Suspense>
+        </section>
+
+        {/* ── TOP RATED ── */}
+        <section style={{ paddingBottom: "3rem" }} aria-label="Top rated movies">
+          <div className="section-divider" style={{ marginBottom: "2rem" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
+              🏆 Top Rated <span className="gradient-text-gold">Movies</span>
+            </h2>
+            <Link href="/movies" style={{ fontSize: 13, fontWeight: 700, color: "#f5c518", textDecoration: "none" }}>
+              See All →
+            </Link>
+          </div>
+          <Suspense fallback={<SkeletonPosterRow />}>
+            <TopRatedRow />
+          </Suspense>
+        </section>
+
+        {/* ── CRICKET SCORES ── */}
+        <section style={{ paddingBottom: "3rem" }} aria-label="Cricket scores">
+          <div className="section-divider" style={{ marginBottom: "2rem" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
+              🏏 <span className="gradient-text-green">Cricket</span> Scores
+            </h2>
+            <Link href="/cricket" style={{ fontSize: 13, fontWeight: 700, color: "#00b341", textDecoration: "none" }}>
+              All Matches →
+            </Link>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+            {cricketMatches.slice(0, 3).map((match) => (
+              <Link
+                key={match.id}
+                href="/cricket"
+                style={{ display: "block", background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 12, padding: 16, textDecoration: "none" }}
               >
-                Explore →
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── TRENDING MOVIES ── */}
-      <section className="max-w-7xl mx-auto px-4 pb-16" aria-label="Trending movies">
-        <div className="section-divider mb-12" />
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-black text-white">
-            🎬 Trending <span className="gradient-text-pink">Movies</span>
-          </h2>
-          <Link href="/movies" className="text-sm font-semibold" style={{ color: "#a78bfa" }}>
-            View all →
-          </Link>
-        </div>
-
-        {/* Ad slot */}
-        <div className="ad-slot mb-8" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          {movies.map((movie, i) => (
-            <Link
-              key={movie.id}
-              href="/movies"
-              className="group block card-hover"
-            >
-              <div
-                className={`relative aspect-[2/3] rounded-xl bg-gradient-to-br ${movieGradients[i % movieGradients.length]} mb-3 overflow-hidden`}
-                style={{ border: "1px solid #1e1e2e" }}
-              >
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
-                  <span className="text-3xl mb-1" aria-hidden="true">🎬</span>
-                  <span className="text-white text-xs font-bold leading-tight">{movie.title}</span>
-                </div>
-                <div
-                  className="absolute top-2 right-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md"
-                  style={{ background: "rgba(0,0,0,0.65)" }}
-                >
-                  <span className="text-amber-400" aria-hidden="true" style={{ fontSize: "10px" }}>★</span>
-                  <span className="text-white font-bold" style={{ fontSize: "10px" }}>
-                    {movie.vote_average}
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs font-semibold text-white truncate mb-1">{movie.title}</p>
-              <p className="text-xs mb-1.5" style={{ color: "#9ca3af" }}>
-                {movie.genre} · {new Date(movie.release_date).getFullYear()}
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {movie.streaming.slice(0, 2).map((s) => (
-                  <span
-                    key={s}
-                    className="text-white font-bold rounded"
-                    style={{
-                      fontSize: "9px",
-                      padding: "2px 5px",
-                      background: streamingColors[s] ?? "#374151",
-                    }}
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── TRENDING SHOWS ── */}
-      <section className="max-w-7xl mx-auto px-4 pb-20" aria-label="Trending TV shows">
-        <div className="section-divider mb-12" />
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-black text-white">
-            📺 Trending <span className="gradient-text">TV Shows</span>
-          </h2>
-          <Link href="/tv-shows" className="text-sm font-semibold" style={{ color: "#a78bfa" }}>
-            View all →
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {shows.map((show, i) => (
-            <Link
-              key={show.id}
-              href="/tv-shows"
-              className="block card-hover rounded-xl overflow-hidden group"
-              style={{ background: "#141422", border: "1px solid #1e1e2e" }}
-            >
-              <div
-                className={`h-28 bg-gradient-to-br ${showGradients[i % showGradients.length]} flex items-center justify-center relative`}
-              >
-                <span className="text-5xl" aria-hidden="true">📺</span>
-                <div
-                  className="absolute inset-0"
-                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)" }}
-                />
-                <div className="absolute bottom-3 left-4 flex items-center gap-1">
-                  <span className="text-amber-400" style={{ fontSize: "13px" }} aria-hidden="true">★</span>
-                  <span className="text-sm font-bold text-white">{show.vote_average}</span>
-                </div>
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-white mb-1 truncate">{show.name}</h3>
-                <p className="text-xs mb-3" style={{ color: "#9ca3af" }}>
-                  {show.genre} · {new Date(show.first_air_date).getFullYear()}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {show.streaming.map((s) => (
-                    <span
-                      key={s}
-                      className="text-white font-bold rounded"
-                      style={{
-                        fontSize: "11px",
-                        padding: "2px 8px",
-                        background: streamingColors[s] ?? "#374151",
-                      }}
-                    >
-                      {s}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span style={{ fontSize: 11, color: "#b3b3b3", fontWeight: 600 }}>🏆 {match.tournament}</span>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {match.status === "live" && (
+                      <span style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(229,9,20,0.15)", border: "1px solid rgba(229,9,20,0.3)", color: "#f87171", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                        <span className="live-dot" style={{ width: 6, height: 6, background: "#e50914", borderRadius: "50%", display: "inline-block" }} />
+                        LIVE
+                      </span>
+                    )}
+                    <span style={{ background: "rgba(0,112,243,0.12)", border: "1px solid rgba(0,112,243,0.25)", color: "#60a5fa", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>
+                      {match.format}
                     </span>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8 }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{countryFlags[match.teams.home.name] ?? ""} {match.teams.home.name}</p>
+                    {match.status !== "upcoming" && <p style={{ fontSize: 18, fontWeight: 900, color: "#00b341" }}>{match.teams.home.score}</p>}
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: "#6b7280" }}>VS</span>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{match.teams.away.name} {countryFlags[match.teams.away.name] ?? ""}</p>
+                    {match.status !== "upcoming" && <p style={{ fontSize: 18, fontWeight: 900, color: "#b3b3b3" }}>{match.teams.away.score}</p>}
+                  </div>
+                </div>
+                {match.result && <p style={{ fontSize: 11, color: "#00b341", fontWeight: 600, marginTop: 8, borderTop: "1px solid #2a2a2a", paddingTop: 8 }}>✓ {match.result}</p>}
+                {match.status === "upcoming" && match.startTime && <p style={{ fontSize: 11, color: "#f5c518", marginTop: 8 }}>🕐 {match.startTime}</p>}
+              </Link>
+            ))}
+          </div>
+        </section>
 
-        {/* Bottom ad slot */}
-        <div className="ad-slot mt-12" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
-      </section>
+        {/* ── FOOTBALL SCORES ── */}
+        <section style={{ paddingBottom: "3rem" }} aria-label="Football scores">
+          <div className="section-divider" style={{ marginBottom: "2rem" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
+              ⚽ <span className="gradient-text-blue">Football</span> Scores
+            </h2>
+            <Link href="/football" style={{ fontSize: 13, fontWeight: 700, color: "#0070f3", textDecoration: "none" }}>
+              All Matches →
+            </Link>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+            {footballMatches.slice(0, 3).map((match) => (
+              <Link
+                key={match.id}
+                href="/football"
+                style={{ display: "block", background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 12, padding: 16, textDecoration: "none" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#f5c518" }}>{match.leagueLogo} {match.league}</span>
+                  {match.status === "live" && match.minute && (
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(0,179,65,0.12)", border: "1px solid rgba(0,179,65,0.3)", color: "#34d399", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                      <span className="live-dot" style={{ width: 6, height: 6, background: "#00b341", borderRadius: "50%", display: "inline-block" }} />
+                      {match.minute}&apos;
+                    </span>
+                  )}
+                  {match.status === "completed" && <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 600 }}>FT</span>}
+                  {match.status === "upcoming" && match.kickoff && <span style={{ fontSize: 11, color: "#f5c518" }}>🕐 {match.kickoff}</span>}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{match.homeTeam}</p>
+                  <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 72 }}>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>
+                      {match.status === "upcoming" ? "–" : `${match.homeScore} – ${match.awayScore}`}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", textAlign: "right" }}>{match.awayTeam}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* ── AD SLOT 2 ── */}
+        <div className="ad-slot" style={{ height: 90, margin: "0 0 3rem" }}>Advertisement</div>
+
+      </div>
     </>
   );
 }

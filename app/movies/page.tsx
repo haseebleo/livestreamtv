@@ -1,198 +1,366 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockMovies } from "@/lib/api/sports";
-import { ExternalLink } from "lucide-react";
+import Image from "next/image";
+import { getPopularMovies, getMoviesByGenre, MOVIE_GENRES, POSTER } from "@/lib/api/tmdb";
+import { JsonLd } from "@/components/seo/json-ld";
+
+interface PageProps {
+  searchParams: Promise<{ genre?: string; page?: string }>;
+}
 
 export const metadata: Metadata = {
-  title: "Movies Streaming Guide — Where to Watch",
+  title: "Movies Streaming Guide — Where to Watch Any Movie",
   description:
-    "Find where to stream any movie online. Netflix, Amazon Prime, Disney+, HBO Max and more. Updated daily.",
+    "Find where to stream any movie online. Netflix, Amazon Prime, Disney+, HBO Max and more. 10,000+ movies with streaming info updated daily.",
+  openGraph: {
+    title: "Movies Streaming Guide | LiveStreamTV.pk",
+    description: "Find where to stream any movie — Netflix, Disney+, HBO Max and more.",
+  },
 };
 
 const streamingPlatforms = [
-  { name: "Netflix", color: "#dc2626", emoji: "🔴", desc: "Stream movies & original series" },
-  { name: "Disney+", color: "#1d4ed8", emoji: "🏰", desc: "Disney, Marvel, Star Wars & more" },
-  { name: "Amazon Prime", color: "#d97706", emoji: "📦", desc: "Prime Originals and more" },
-  { name: "HBO Max", color: "#7e22ce", emoji: "🎭", desc: "HBO originals, DC, Warner" },
-  { name: "Paramount+", color: "#2563eb", emoji: "⛰️", desc: "CBS, Paramount originals" },
-  { name: "Apple TV+", color: "#374151", emoji: "🍎", desc: "Apple original films & series" },
+  { name: "Netflix", color: "#dc2626", emoji: "🔴", url: "https://netflix.com", desc: "Stream movies & original series" },
+  { name: "Disney+", color: "#1d4ed8", emoji: "🏰", url: "https://disneyplus.com", desc: "Disney, Marvel, Star Wars & more" },
+  { name: "Amazon Prime", color: "#d97706", emoji: "📦", url: "https://primevideo.com", desc: "Prime Originals and more" },
+  { name: "HBO Max", color: "#7e22ce", emoji: "🎭", url: "https://max.com", desc: "HBO originals, DC, Warner" },
+  { name: "Paramount+", color: "#2563eb", emoji: "⛰️", url: "https://paramountplus.com", desc: "CBS, Paramount originals" },
+  { name: "Apple TV+", color: "#374151", emoji: "🍎", url: "https://tv.apple.com", desc: "Apple original films & series" },
 ];
 
-const platformFilterPills = [
-  "All",
-  "Netflix",
-  "Disney+",
-  "Amazon Prime",
-  "HBO Max",
-];
+export default async function MoviesPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const genreId = params.genre ? parseInt(params.genre) : null;
+  const page = params.page ? parseInt(params.page) : 1;
 
-const streamingColors: Record<string, string> = {
-  Netflix: "#dc2626",
-  "Disney+": "#1d4ed8",
-  "Amazon Prime": "#d97706",
-  "HBO Max": "#7e22ce",
-  "Paramount+": "#2563eb",
-  "Apple TV+": "#374151",
-  BBC: "#4b5563",
-};
+  const movies = genreId
+    ? await getMoviesByGenre(genreId, page)
+    : await getPopularMovies(page);
 
-const posterGradients = [
-  "from-red-950 to-orange-950",
-  "from-blue-950 to-indigo-950",
-  "from-purple-950 to-pink-950",
-  "from-green-950 to-teal-950",
-  "from-amber-950 to-yellow-950",
-  "from-cyan-950 to-blue-950",
-];
+  const activeGenre = MOVIE_GENRES.find((g) => g.id === genreId);
 
-export default function MoviesPage() {
-  const movies = getMockMovies();
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://livestreamtv.pk" },
+      { "@type": "ListItem", position: 2, name: "Movies", item: "https://livestreamtv.pk/movies" },
+      ...(activeGenre
+        ? [{ "@type": "ListItem", position: 3, name: activeGenre.name, item: `https://livestreamtv.pk/movies?genre=${genreId}` }]
+        : []),
+    ],
+  };
 
   return (
-    <div className="min-h-screen pt-20">
-      {/* Header */}
-      <div className="relative py-16 px-4 text-center overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(236,72,153,0.12) 0%, transparent 70%)",
-          }}
-        />
-        <div className="relative">
-          <span className="text-5xl block mb-4" aria-hidden="true">🎬</span>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-3">
-            Movies <span className="gradient-text-pink">Streaming Guide</span>
-          </h1>
-          <p className="max-w-xl mx-auto text-base" style={{ color: "#9ca3af" }}>
-            Instantly find which platform streams any movie in your region — updated daily
-          </p>
-        </div>
-      </div>
+    <>
+      <JsonLd data={breadcrumbJsonLd} />
+      <div style={{ minHeight: "100vh", paddingTop: 80 }}>
 
-      <div className="max-w-7xl mx-auto px-4 pb-20">
-        {/* Platform filter chips (visual only) */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {platformFilterPills.map((p, i) => (
-            <span
-              key={p}
-              className="px-4 py-1.5 rounded-full text-sm font-semibold"
+        {/* ── HEADER ── */}
+        <div
+          style={{
+            position: "relative",
+            padding: "3rem 1rem 2rem",
+            textAlign: "center",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(229,9,20,0.1) 0%, transparent 70%)",
+              pointerEvents: "none",
+            }}
+            aria-hidden="true"
+          />
+          <div style={{ position: "relative" }}>
+            <h1
               style={{
-                background: i === 0 ? "rgba(236,72,153,0.15)" : "rgba(255,255,255,0.04)",
-                border: i === 0 ? "1px solid rgba(236,72,153,0.3)" : "1px solid #1e1e2e",
-                color: i === 0 ? "#f472b6" : "#9ca3af",
+                fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                fontWeight: 900,
+                color: "#ffffff",
+                marginBottom: 12,
               }}
             >
-              {p}
-            </span>
-          ))}
-        </div>
-
-        {/* Ad slot */}
-        <div className="ad-slot mb-8" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
-
-        {/* Movies grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-14">
-          {movies.map((movie, i) => (
-            <div key={movie.id} className="group cursor-pointer card-hover">
-              <div
-                className={`relative aspect-[2/3] rounded-xl bg-gradient-to-br ${posterGradients[i % posterGradients.length]} mb-3 overflow-hidden`}
-                style={{ border: "1px solid #1e1e2e" }}
-              >
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
-                  <span className="text-4xl mb-2" aria-hidden="true">🎬</span>
-                  <span className="text-white text-xs font-bold leading-tight">{movie.title}</span>
-                </div>
-                {/* Rating badge */}
-                <div
-                  className="absolute top-2 right-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md"
-                  style={{ background: "rgba(0,0,0,0.7)" }}
-                >
-                  <span className="text-amber-400" style={{ fontSize: "10px" }} aria-hidden="true">★</span>
-                  <span className="text-white font-bold" style={{ fontSize: "10px" }}>
-                    {movie.vote_average}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-white truncate mb-1">{movie.title}</p>
-                <p className="mb-1.5" style={{ fontSize: "10px", color: "#9ca3af" }}>
-                  {movie.genre} · {new Date(movie.release_date).getFullYear()}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {movie.streaming.map((s) => (
-                    <span
-                      key={s}
-                      className="text-white font-bold rounded"
-                      style={{
-                        fontSize: "9px",
-                        padding: "2px 5px",
-                        background: streamingColors[s] ?? "#374151",
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Ad slot */}
-        <div className="ad-slot mb-14" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
-
-        {/* Where to Watch section */}
-        <div>
-          <h2 className="text-2xl font-black text-white mb-6">Where to Watch</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {streamingPlatforms.map((platform) => (
-              <div
-                key={platform.name}
-                className="flex items-center gap-4 p-4 rounded-xl card-hover"
-                style={{ background: "#141422", border: "1px solid #1e1e2e" }}
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                  style={{ background: platform.color }}
-                  aria-hidden="true"
-                >
-                  {platform.emoji}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-white">{platform.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>{platform.desc}</p>
-                </div>
-                <ExternalLink
-                  className="w-4 h-4 flex-shrink-0 ml-auto"
-                  style={{ color: "#9ca3af" }}
-                  aria-hidden="true"
-                />
-              </div>
-            ))}
+              {activeGenre ? (
+                <>{activeGenre.name} <span className="gradient-text">Movies</span></>
+              ) : (
+                <>Movies <span className="gradient-text">Streaming Guide</span></>
+              )}
+            </h1>
+            <p style={{ color: "#b3b3b3", fontSize: 15, maxWidth: 480, margin: "0 auto" }}>
+              Find which streaming platform hosts any movie — updated daily
+            </p>
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="mt-12 text-center">
-          <Link
-            href="/tv-shows"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-opacity hover:opacity-90"
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 1rem 5rem" }}>
+
+          {/* ── GENRE PILLS ── */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+            <Link
+              href="/movies"
+              style={{
+                padding: "6px 16px",
+                borderRadius: 999,
+                fontSize: 13,
+                fontWeight: 600,
+                background: !genreId ? "rgba(229,9,20,0.15)" : "rgba(255,255,255,0.04)",
+                border: !genreId ? "1px solid rgba(229,9,20,0.3)" : "1px solid #2a2a2a",
+                color: !genreId ? "#f87171" : "#b3b3b3",
+                textDecoration: "none",
+              }}
+            >
+              All
+            </Link>
+            {MOVIE_GENRES.map((g) => (
+              <Link
+                key={g.id}
+                href={`/movies?genre=${g.id}`}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: genreId === g.id ? "rgba(229,9,20,0.15)" : "rgba(255,255,255,0.04)",
+                  border: genreId === g.id ? "1px solid rgba(229,9,20,0.3)" : "1px solid #2a2a2a",
+                  color: genreId === g.id ? "#f87171" : "#b3b3b3",
+                  textDecoration: "none",
+                }}
+              >
+                {g.name}
+              </Link>
+            ))}
+          </div>
+
+          {/* ── AD SLOT ── */}
+          <div className="ad-slot" style={{ height: 90, marginBottom: 24 }}>Advertisement</div>
+
+          {/* ── MOVIES GRID ── */}
+          <div
             style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid #1e1e2e",
-              color: "#fff",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+              gap: 16,
+              marginBottom: 48,
             }}
           >
-            📺 Also check TV Shows →
-          </Link>
+            {movies.map((movie: {
+              id: number;
+              title: string;
+              poster_path: string | null;
+              vote_average: number;
+              release_date: string;
+            }) => {
+              const poster = POSTER(movie.poster_path);
+              const year = movie.release_date ? new Date(movie.release_date).getFullYear().toString() : "";
+              return (
+                <Link
+                  key={movie.id}
+                  href={`/movies/${movie.id}`}
+                  style={{ textDecoration: "none" }}
+                  aria-label={`${movie.title}${year ? ` (${year})` : ""}`}
+                >
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      aspectRatio: "2/3",
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      background: "#1c1c1c",
+                      border: "1px solid #2a2a2a",
+                      marginBottom: 8,
+                      transition: "transform 0.2s",
+                    }}
+                    className="card-hover"
+                  >
+                    {poster ? (
+                      <Image
+                        src={poster}
+                        alt={movie.title}
+                        fill
+                        style={{ objectFit: "cover" }}
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 150px"
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: 12,
+                          textAlign: "center",
+                          background: `linear-gradient(135deg, hsl(${(movie.id * 47) % 360} 30% 15%), hsl(${(movie.id * 83) % 360} 30% 10%))`,
+                        }}
+                      >
+                        <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">🎬</span>
+                        <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, lineHeight: 1.3 }}>{movie.title}</span>
+                      </div>
+                    )}
+                    {/* Rating badge */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 6,
+                        right: 6,
+                        background: "rgba(0,0,0,0.75)",
+                        borderRadius: 4,
+                        padding: "2px 5px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                      }}
+                    >
+                      <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
+                      <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{movie.vote_average.toFixed(1)}</span>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{movie.title}</p>
+                  {year && <p style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{year}</p>}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* ── PAGINATION ── */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 48 }}>
+            {page > 1 && (
+              <Link
+                href={genreId ? `/movies?genre=${genreId}&page=${page - 1}` : `/movies?page=${page - 1}`}
+                style={{
+                  padding: "8px 20px",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid #2a2a2a",
+                  color: "#ffffff",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                ← Previous
+              </Link>
+            )}
+            {[page - 1, page, page + 1, page + 2].filter((p) => p > 0 && p <= 500).map((p) => (
+              <Link
+                key={p}
+                href={genreId ? `/movies?genre=${genreId}&page=${p}` : `/movies?page=${p}`}
+                style={{
+                  padding: "8px 14px",
+                  background: p === page ? "#e50914" : "rgba(255,255,255,0.06)",
+                  border: p === page ? "1px solid #e50914" : "1px solid #2a2a2a",
+                  color: "#ffffff",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                {p}
+              </Link>
+            ))}
+            <Link
+              href={genreId ? `/movies?genre=${genreId}&page=${page + 1}` : `/movies?page=${page + 1}`}
+              style={{
+                padding: "8px 20px",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid #2a2a2a",
+                color: "#ffffff",
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Next →
+            </Link>
+          </div>
+
+          {/* ── AD SLOT ── */}
+          <div className="ad-slot" style={{ height: 90, marginBottom: 48 }}>Advertisement</div>
+
+          {/* ── WHERE TO WATCH ── */}
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff", marginBottom: 20 }}>Where to Watch</h2>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: 12,
+              }}
+            >
+              {streamingPlatforms.map((platform) => (
+                <a
+                  key={platform.name}
+                  href={platform.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: 14,
+                    background: "#1c1c1c",
+                    border: "1px solid #2a2a2a",
+                    borderRadius: 10,
+                    textDecoration: "none",
+                    transition: "border-color 0.2s",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 10,
+                      background: platform.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 20,
+                      flexShrink: 0,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {platform.emoji}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, color: "#ffffff", fontSize: 14 }}>{platform.name}</p>
+                    <p style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{platform.desc}</p>
+                  </div>
+                  <span style={{ marginLeft: "auto", color: "#6b7280", fontSize: 12, flexShrink: 0 }}>↗</span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* ── CTA ── */}
+          <div style={{ marginTop: 40, textAlign: "center" }}>
+            <Link
+              href="/tv-shows"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 24px",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid #2a2a2a",
+                color: "#ffffff",
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 14,
+                textDecoration: "none",
+              }}
+            >
+              📺 Also check TV Shows →
+            </Link>
+          </div>
+
         </div>
       </div>
-    </div>
+    </>
   );
 }

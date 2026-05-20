@@ -1,169 +1,229 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockShows } from "@/lib/api/sports";
+import Image from "next/image";
+import { getTrendingShows, getPopularShows, POSTER } from "@/lib/api/tmdb";
+import { JsonLd } from "@/components/seo/json-ld";
+
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
 
 export const metadata: Metadata = {
-  title: "Best TV Shows Streaming Guide",
+  title: "Best TV Shows to Stream Online",
   description:
-    "Find the best TV shows streaming on Netflix, HBO Max, Disney+, and Amazon Prime. Top-rated series updated weekly.",
+    "Find the best TV shows streaming on Netflix, HBO Max, Disney+, Amazon Prime and more. Trending series, top-rated dramas and must-watch shows updated daily.",
+  openGraph: {
+    title: "Best TV Shows to Stream | LiveStreamTV.pk",
+    description: "Top-rated and trending TV shows across Netflix, HBO Max, Disney+ and more.",
+  },
 };
 
-const genres = ["All", "Drama", "Sci-Fi", "Action", "Comedy", "Crime", "Fantasy", "Horror"];
-
-const streamingColors: Record<string, string> = {
-  Netflix: "#dc2626",
-  "Disney+": "#1d4ed8",
-  "Amazon Prime": "#d97706",
-  "HBO Max": "#7e22ce",
-  BBC: "#4b5563",
-};
-
-const posterGradients = [
-  "from-indigo-950 to-purple-950",
-  "from-red-950 to-rose-950",
-  "from-teal-950 to-green-950",
-  "from-orange-950 to-amber-950",
-  "from-blue-950 to-cyan-950",
-  "from-pink-950 to-fuchsia-950",
+const TV_GENRES = [
+  { id: 18, name: "Drama" },
+  { id: 878, name: "Sci-Fi" },
+  { id: 10759, name: "Action & Adventure" },
+  { id: 35, name: "Comedy" },
+  { id: 80, name: "Crime" },
+  { id: 10765, name: "Fantasy" },
+  { id: 27, name: "Horror" },
+  { id: 9648, name: "Mystery" },
 ];
 
-export default function TvShowsPage() {
-  const shows = getMockShows();
+export default async function TvShowsPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const page = params.page ? parseInt(params.page) : 1;
+
+  const [trending, popular] = await Promise.all([
+    getTrendingShows(),
+    getPopularShows(page),
+  ]);
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://livestreamtv.pk" },
+      { "@type": "ListItem", position: 2, name: "TV Shows", item: "https://livestreamtv.pk/tv-shows" },
+    ],
+  };
 
   return (
-    <div className="min-h-screen pt-20">
-      {/* Header */}
-      <div className="relative py-16 px-4 text-center overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(14,165,233,0.12) 0%, transparent 70%)",
-          }}
-        />
-        <div className="relative">
-          <span className="text-5xl block mb-4" aria-hidden="true">📺</span>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-3">
-            Best <span className="gradient-text">TV Shows</span> to Stream
-          </h1>
-          <p className="max-w-xl mx-auto text-base" style={{ color: "#9ca3af" }}>
-            Top-rated series across Netflix, HBO Max, Disney+, Amazon Prime and more
-          </p>
-        </div>
-      </div>
+    <>
+      <JsonLd data={breadcrumbJsonLd} />
+      <div style={{ minHeight: "100vh", paddingTop: 80 }}>
 
-      <div className="max-w-7xl mx-auto px-4 pb-20">
-        {/* Genre filter chips (visual only) */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {genres.map((g, i) => (
-            <span
-              key={g}
-              className="px-4 py-1.5 rounded-full text-sm font-semibold"
+        {/* ── HEADER ── */}
+        <div style={{ position: "relative", padding: "3rem 1rem 2rem", textAlign: "center", overflow: "hidden" }}>
+          <div
+            style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(0,112,243,0.1) 0%, transparent 70%)", pointerEvents: "none" }}
+            aria-hidden="true"
+          />
+          <div style={{ position: "relative" }}>
+            <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)", fontWeight: 900, color: "#ffffff", marginBottom: 12 }}>
+              Best <span className="gradient-text-blue">TV Shows</span> to Stream
+            </h1>
+            <p style={{ color: "#b3b3b3", fontSize: 15, maxWidth: 480, margin: "0 auto" }}>
+              Top-rated series across Netflix, HBO Max, Disney+, Amazon Prime and more
+            </p>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 1rem 5rem" }}>
+
+          {/* ── GENRE PILLS ── */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+            {TV_GENRES.map((g) => (
+              <span
+                key={g.id}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid #2a2a2a",
+                  color: "#b3b3b3",
+                  cursor: "default",
+                }}
+              >
+                {g.name}
+              </span>
+            ))}
+          </div>
+
+          {/* ── AD SLOT ── */}
+          <div className="ad-slot" style={{ height: 90, marginBottom: 24 }}>Advertisement</div>
+
+          {/* ── TRENDING SECTION ── */}
+          {page === 1 && trending.length > 0 && (
+            <section style={{ marginBottom: 48 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
+                  🔥 Trending This Week
+                </h2>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                  gap: 16,
+                }}
+              >
+                {trending.slice(0, 6).map((show: {
+                  id: number;
+                  name: string;
+                  poster_path: string | null;
+                  vote_average: number;
+                  first_air_date: string;
+                }) => {
+                  const poster = POSTER(show.poster_path);
+                  const year = show.first_air_date ? new Date(show.first_air_date).getFullYear().toString() : "";
+                  return (
+                    <Link key={show.id} href={`/tv-shows/${show.id}`} style={{ textDecoration: "none" }} aria-label={show.name}>
+                      <div style={{ position: "relative", width: "100%", aspectRatio: "2/3", borderRadius: 10, overflow: "hidden", background: "#1c1c1c", border: "1px solid #2a2a2a", marginBottom: 8, transition: "transform 0.2s" }} className="card-hover">
+                        {poster ? (
+                          <Image src={poster} alt={show.name} fill style={{ objectFit: "cover" }} sizes="(max-width: 640px) 50vw, 150px" />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, textAlign: "center", background: `linear-gradient(135deg, hsl(${(show.id * 53) % 360} 30% 15%), hsl(${(show.id * 79) % 360} 30% 10%))` }}>
+                            <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">📺</span>
+                            <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>{show.name}</span>
+                          </div>
+                        )}
+                        <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.75)", borderRadius: 4, padding: "2px 5px", display: "flex", alignItems: "center", gap: 2 }}>
+                          <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
+                          <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{show.vote_average.toFixed(1)}</span>
+                        </div>
+                        {/* Trending badge */}
+                        <div style={{ position: "absolute", top: 6, left: 6, background: "rgba(229,9,20,0.9)", borderRadius: 3, padding: "1px 5px" }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "#fff" }}>🔥 TRENDING</span>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{show.name}</p>
+                      {year && <p style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{year}</p>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* ── POPULAR SHOWS GRID ── */}
+          <section>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
+                Popular TV Shows
+              </h2>
+            </div>
+            <div
               style={{
-                background: i === 0 ? "rgba(14,165,233,0.15)" : "rgba(255,255,255,0.04)",
-                border: i === 0 ? "1px solid rgba(14,165,233,0.3)" : "1px solid #1e1e2e",
-                color: i === 0 ? "#38bdf8" : "#9ca3af",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                gap: 16,
+                marginBottom: 40,
               }}
             >
-              {g}
-            </span>
-          ))}
-        </div>
-
-        {/* Ad slot */}
-        <div className="ad-slot mb-8" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
-
-        {/* Shows grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
-          {shows.map((show, i) => (
-            <div
-              key={show.id}
-              className="card-hover rounded-xl overflow-hidden group"
-              style={{ background: "#141422", border: "1px solid #1e1e2e" }}
-            >
-              {/* Show poster area */}
-              <div
-                className={`relative h-36 bg-gradient-to-br ${posterGradients[i % posterGradients.length]} flex items-center justify-center`}
-              >
-                <span className="text-5xl" aria-hidden="true">📺</span>
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: "linear-gradient(to top, rgba(20,20,34,0.8), transparent)",
-                  }}
-                />
-                {/* Rating */}
-                <div className="absolute bottom-3 left-4 flex items-center gap-1">
-                  <span className="text-amber-400" style={{ fontSize: "14px" }} aria-hidden="true">★</span>
-                  <span className="text-sm font-bold text-white">{show.vote_average}</span>
-                </div>
-                {/* Streaming platform badges top-right */}
-                <div className="absolute top-3 right-3 flex gap-1">
-                  {show.streaming.slice(0, 2).map((s) => (
-                    <span
-                      key={s}
-                      className="text-white font-bold rounded"
-                      style={{
-                        fontSize: "9px",
-                        padding: "2px 6px",
-                        background: streamingColors[s] ?? "#374151",
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Card body */}
-              <div className="p-4">
-                <h3 className="font-bold text-white mb-1 truncate">{show.name}</h3>
-                <p className="text-xs mb-3" style={{ color: "#9ca3af" }}>
-                  {show.genre} · {new Date(show.first_air_date).getFullYear()}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {show.streaming.map((s) => (
-                    <span
-                      key={s}
-                      className="text-white font-bold rounded"
-                      style={{
-                        fontSize: "11px",
-                        padding: "3px 8px",
-                        background: streamingColors[s] ?? "#374151",
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              {popular.map((show: {
+                id: number;
+                name: string;
+                poster_path: string | null;
+                vote_average: number;
+                first_air_date: string;
+              }) => {
+                const poster = POSTER(show.poster_path);
+                const year = show.first_air_date ? new Date(show.first_air_date).getFullYear().toString() : "";
+                return (
+                  <Link key={show.id} href={`/tv-shows/${show.id}`} style={{ textDecoration: "none" }} aria-label={show.name}>
+                    <div style={{ position: "relative", width: "100%", aspectRatio: "2/3", borderRadius: 10, overflow: "hidden", background: "#1c1c1c", border: "1px solid #2a2a2a", marginBottom: 8 }} className="card-hover">
+                      {poster ? (
+                        <Image src={poster} alt={show.name} fill style={{ objectFit: "cover" }} sizes="(max-width: 640px) 50vw, 150px" />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, textAlign: "center", background: `linear-gradient(135deg, hsl(${(show.id * 53) % 360} 30% 15%), hsl(${(show.id * 79) % 360} 30% 10%))` }}>
+                          <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">📺</span>
+                          <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>{show.name}</span>
+                        </div>
+                      )}
+                      <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.75)", borderRadius: 4, padding: "2px 5px", display: "flex", alignItems: "center", gap: 2 }}>
+                        <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
+                        <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{show.vote_average.toFixed(1)}</span>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{show.name}</p>
+                    {year && <p style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{year}</p>}
+                  </Link>
+                );
+              })}
             </div>
-          ))}
-        </div>
 
-        {/* Ad slot */}
-        <div className="ad-slot mb-12" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
+            {/* Pagination */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 48 }}>
+              {page > 1 && (
+                <Link href={`/tv-shows?page=${page - 1}`} style={{ padding: "8px 20px", background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+                  ← Previous
+                </Link>
+              )}
+              {[page, page + 1, page + 2].filter((p) => p > 0).map((p) => (
+                <Link key={p} href={`/tv-shows?page=${p}`} style={{ padding: "8px 14px", background: p === page ? "#0070f3" : "rgba(255,255,255,0.06)", border: p === page ? "1px solid #0070f3" : "1px solid #2a2a2a", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+                  {p}
+                </Link>
+              ))}
+              <Link href={`/tv-shows?page=${page + 1}`} style={{ padding: "8px 20px", background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+                Next →
+              </Link>
+            </div>
+          </section>
 
-        {/* CTA */}
-        <div className="text-center">
-          <Link
-            href="/movies"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-opacity hover:opacity-90"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid #1e1e2e",
-              color: "#fff",
-            }}
-          >
-            🎬 Also check Movies Guide →
-          </Link>
+          {/* ── AD SLOT ── */}
+          <div className="ad-slot" style={{ height: 90, marginBottom: 40 }}>Advertisement</div>
+
+          {/* ── CTA ── */}
+          <div style={{ textAlign: "center" }}>
+            <Link href="/movies" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", background: "rgba(255,255,255,0.04)", border: "1px solid #2a2a2a", color: "#fff", borderRadius: 8, fontWeight: 700, fontSize: 14, textDecoration: "none" }}>
+              🎬 Also check Movies Guide →
+            </Link>
+          </div>
+
         </div>
       </div>
-    </div>
+    </>
   );
 }
