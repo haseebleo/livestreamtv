@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LiveStreamTV.pk 📡
+
+Pakistan's #1 Sports & Entertainment Hub — Live cricket scores, football standings, and streaming guide for movies & TV shows.
+
+## Features
+
+- 🏏 **Live Cricket Scores** — Ball-by-ball updates from Asia Cup, World Cup, Test Series, T20 leagues
+- ⚽ **Football Live Scores** — Premier League, La Liga, Champions League, Bundesliga and 100+ competitions
+- 🎬 **Movies Streaming Guide** — Find any movie on Netflix, Disney+, Amazon Prime, HBO Max
+- 📺 **TV Shows** — Top-rated shows with streaming platform info
+- 📡 **100+ Live TV Channels** — Free global live TV organized by category
+- ⚡ **Admin Panel** — Full dashboard with stats, content management, API settings
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Styling**: Tailwind CSS
+- **Language**: TypeScript
+- **APIs**: TMDB (movies/TV), TheSportsDB (football), CricAPI (cricket)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
+cp .env.example .env.local
+# Add your API keys to .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API Keys Needed (All Free)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| API | URL | Used For |
+|-----|-----|---------|
+| TMDB | themoviedb.org/settings/api | Movies & TV shows |
+| CricAPI | cricapi.com | Live cricket scores |
+| Google Analytics | analytics.google.com | Traffic tracking |
+| Google AdSense | adsense.google.com | Monetization |
 
-## Learn More
+## Admin Panel
 
-To learn more about Next.js, take a look at the following resources:
+Access at `/admin` — Dashboard, Content Manager, Settings with AdSense & SEO checklist.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## AdSense Ready
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ad slot placeholders are already placed in all high-traffic pages. Replace `.ad-slot` divs with your AdSense code after approval.
 
-## Deploy on Vercel
+## Deploy to Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push to GitHub (already done)
+2. Go to vercel.com, import this repo
+3. Add environment variables from `.env.example`
+4. Deploy — done!
