@@ -18,8 +18,8 @@ async function main() {
     { key: "contact_email", value: "admin@livestreamtv.pk" },
     { key: "tmdb_api_key", value: "" },
     { key: "cricapi_key", value: "" },
-    { key: "adsense_id", value: "" },
-    { key: "ga_id", value: "" },
+    { key: "adsense_id", value: "ca-pub-6060748329413564" },
+    { key: "ga_id", value: "G-PLR2SYR3WE" },
     { key: "footer_text", value: "© 2026 LiveStreamTV.pk. We do not host any streams." },
   ];
 
