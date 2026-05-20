@@ -1,38 +1,48 @@
-import { getMockMovies } from "@/lib/api/sports";
-import { Star, Play, ExternalLink } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { getMockMovies } from "@/lib/api/sports";
+import { ExternalLink } from "lucide-react";
 
-export const metadata = {
-  title: "Movies Streaming Guide — Where to Watch | LiveStreamTV.pk",
-  description: "Find where to stream any movie online. Netflix, Amazon Prime, Disney+, HBO Max and more. Updated daily.",
+export const metadata: Metadata = {
+  title: "Movies Streaming Guide — Where to Watch",
+  description:
+    "Find where to stream any movie online. Netflix, Amazon Prime, Disney+, HBO Max and more. Updated daily.",
 };
 
 const streamingPlatforms = [
-  { name: "Netflix", color: "bg-red-600", emoji: "🔴" },
-  { name: "Disney+", color: "bg-blue-600", emoji: "🔵" },
-  { name: "Amazon Prime", color: "bg-amber-600", emoji: "🟡" },
-  { name: "HBO Max", color: "bg-purple-700", emoji: "🟣" },
-  { name: "Paramount+", color: "bg-blue-500", emoji: "🔵" },
-  { name: "Apple TV+", color: "bg-gray-700", emoji: "⬛" },
+  { name: "Netflix", color: "#dc2626", emoji: "🔴", desc: "Stream movies & original series" },
+  { name: "Disney+", color: "#1d4ed8", emoji: "🏰", desc: "Disney, Marvel, Star Wars & more" },
+  { name: "Amazon Prime", color: "#d97706", emoji: "📦", desc: "Prime Originals and more" },
+  { name: "HBO Max", color: "#7e22ce", emoji: "🎭", desc: "HBO originals, DC, Warner" },
+  { name: "Paramount+", color: "#2563eb", emoji: "⛰️", desc: "CBS, Paramount originals" },
+  { name: "Apple TV+", color: "#374151", emoji: "🍎", desc: "Apple original films & series" },
+];
+
+const platformFilterPills = [
+  "All",
+  "Netflix",
+  "Disney+",
+  "Amazon Prime",
+  "HBO Max",
 ];
 
 const streamingColors: Record<string, string> = {
-  Netflix: "bg-red-600",
-  "Disney+": "bg-blue-600",
-  "Amazon Prime": "bg-amber-600",
-  "HBO Max": "bg-purple-700",
-  "Paramount+": "bg-blue-500",
-  "Apple TV+": "bg-gray-700",
-  BBC: "bg-gray-600",
+  Netflix: "#dc2626",
+  "Disney+": "#1d4ed8",
+  "Amazon Prime": "#d97706",
+  "HBO Max": "#7e22ce",
+  "Paramount+": "#2563eb",
+  "Apple TV+": "#374151",
+  BBC: "#4b5563",
 };
 
 const posterGradients = [
-  "from-red-900 to-orange-900",
-  "from-blue-900 to-indigo-900",
-  "from-purple-900 to-pink-900",
-  "from-green-900 to-teal-900",
-  "from-amber-900 to-yellow-900",
-  "from-cyan-900 to-blue-900",
+  "from-red-950 to-orange-950",
+  "from-blue-950 to-indigo-950",
+  "from-purple-950 to-pink-950",
+  "from-green-950 to-teal-950",
+  "from-amber-950 to-yellow-950",
+  "from-cyan-950 to-blue-950",
 ];
 
 export default function MoviesPage() {
@@ -42,60 +52,87 @@ export default function MoviesPage() {
     <div className="min-h-screen pt-20">
       {/* Header */}
       <div className="relative py-16 px-4 text-center overflow-hidden">
-        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(236,72,153,0.12) 0%, transparent 70%)" }} />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          aria-hidden="true"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(236,72,153,0.12) 0%, transparent 70%)",
+          }}
+        />
         <div className="relative">
-          <span className="text-5xl block mb-4">🎬</span>
+          <span className="text-5xl block mb-4" aria-hidden="true">🎬</span>
           <h1 className="text-4xl md:text-5xl font-black text-white mb-3">
             Movies <span className="gradient-text-pink">Streaming Guide</span>
           </h1>
-          <p className="text-gray-400 max-w-xl mx-auto">
-            Instantly find which platform streams any movie in your region
+          <p className="max-w-xl mx-auto text-base" style={{ color: "#9ca3af" }}>
+            Instantly find which platform streams any movie in your region — updated daily
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 pb-16">
-        {/* Platform filter */}
+      <div className="max-w-7xl mx-auto px-4 pb-20">
+        {/* Platform filter chips (visual only) */}
         <div className="flex flex-wrap gap-2 mb-8">
-          <button className="px-4 py-1.5 rounded-full bg-pink-500/20 border border-pink-500/30 text-pink-400 text-sm font-semibold">
-            All Platforms
-          </button>
-          {streamingPlatforms.map((p) => (
-            <button key={p.name} className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-pink-500/10 hover:border-pink-500/20 hover:text-pink-400 transition-all">
-              {p.emoji} {p.name}
-            </button>
+          {platformFilterPills.map((p, i) => (
+            <span
+              key={p}
+              className="px-4 py-1.5 rounded-full text-sm font-semibold"
+              style={{
+                background: i === 0 ? "rgba(236,72,153,0.15)" : "rgba(255,255,255,0.04)",
+                border: i === 0 ? "1px solid rgba(236,72,153,0.3)" : "1px solid #1e1e2e",
+                color: i === 0 ? "#f472b6" : "#9ca3af",
+              }}
+            >
+              {p}
+            </span>
           ))}
         </div>
 
         {/* Ad slot */}
-        <div className="ad-slot h-16 mb-8 rounded-xl">Advertisement</div>
+        <div className="ad-slot mb-8" style={{ height: "90px" }}>
+          Advertisement — Google AdSense
+        </div>
 
-        {/* Movies Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
+        {/* Movies grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-14">
           {movies.map((movie, i) => (
             <div key={movie.id} className="group cursor-pointer card-hover">
-              <div className={`relative aspect-[2/3] rounded-xl bg-gradient-to-br ${posterGradients[i % posterGradients.length]} mb-3 overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all`}>
+              <div
+                className={`relative aspect-[2/3] rounded-xl bg-gradient-to-br ${posterGradients[i % posterGradients.length]} mb-3 overflow-hidden`}
+                style={{ border: "1px solid #1e1e2e" }}
+              >
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
-                  <span className="text-4xl mb-2">🎬</span>
+                  <span className="text-4xl mb-2" aria-hidden="true">🎬</span>
                   <span className="text-white text-xs font-bold leading-tight">{movie.title}</span>
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Play className="w-5 h-5 text-white fill-white ml-0.5" />
-                  </div>
-                </div>
-                <div className="absolute top-2 right-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm">
-                  <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                  <span className="text-[10px] font-bold text-white">{movie.vote_average}</span>
+                {/* Rating badge */}
+                <div
+                  className="absolute top-2 right-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md"
+                  style={{ background: "rgba(0,0,0,0.7)" }}
+                >
+                  <span className="text-amber-400" style={{ fontSize: "10px" }} aria-hidden="true">★</span>
+                  <span className="text-white font-bold" style={{ fontSize: "10px" }}>
+                    {movie.vote_average}
+                  </span>
                 </div>
               </div>
               <div>
                 <p className="text-xs font-semibold text-white truncate mb-1">{movie.title}</p>
-                <p className="text-[10px] text-gray-500 mb-1.5">{movie.genre} · {new Date(movie.release_date).getFullYear()}</p>
+                <p className="mb-1.5" style={{ fontSize: "10px", color: "#9ca3af" }}>
+                  {movie.genre} · {new Date(movie.release_date).getFullYear()}
+                </p>
                 <div className="flex flex-wrap gap-1">
                   {movie.streaming.map((s) => (
-                    <span key={s} className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${streamingColors[s] || "bg-gray-700"} text-white`}>
+                    <span
+                      key={s}
+                      className="text-white font-bold rounded"
+                      style={{
+                        fontSize: "9px",
+                        padding: "2px 5px",
+                        background: streamingColors[s] ?? "#374151",
+                      }}
+                    >
                       {s}
                     </span>
                   ))}
@@ -106,25 +143,54 @@ export default function MoviesPage() {
         </div>
 
         {/* Ad slot */}
-        <div className="ad-slot h-16 mb-8 rounded-xl">Advertisement</div>
+        <div className="ad-slot mb-14" style={{ height: "90px" }}>
+          Advertisement — Google AdSense
+        </div>
 
-        {/* Where to watch section */}
-        <div className="glass rounded-2xl p-8">
-          <h2 className="text-2xl font-black text-white mb-6">Streaming Platforms Guide</h2>
+        {/* Where to Watch section */}
+        <div>
+          <h2 className="text-2xl font-black text-white mb-6">Where to Watch</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {streamingPlatforms.map((platform) => (
-              <div key={platform.name} className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-pink-500/20 transition-colors">
-                <div className={`w-12 h-12 rounded-xl ${platform.color} flex items-center justify-center text-xl`}>
+              <div
+                key={platform.name}
+                className="flex items-center gap-4 p-4 rounded-xl card-hover"
+                style={{ background: "#141422", border: "1px solid #1e1e2e" }}
+              >
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                  style={{ background: platform.color }}
+                  aria-hidden="true"
+                >
                   {platform.emoji}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-bold text-white">{platform.name}</p>
-                  <p className="text-xs text-gray-400">Stream movies & shows</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>{platform.desc}</p>
                 </div>
-                <ExternalLink className="w-4 h-4 text-gray-500 ml-auto" />
+                <ExternalLink
+                  className="w-4 h-4 flex-shrink-0 ml-auto"
+                  style={{ color: "#9ca3af" }}
+                  aria-hidden="true"
+                />
               </div>
             ))}
           </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-12 text-center">
+          <Link
+            href="/tv-shows"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-opacity hover:opacity-90"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid #1e1e2e",
+              color: "#fff",
+            }}
+          >
+            📺 Also check TV Shows →
+          </Link>
         </div>
       </div>
     </div>

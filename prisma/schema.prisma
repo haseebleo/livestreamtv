@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Page {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String   @default("")
+  metaTitle String?
+  metaDesc  String?
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  excerpt   String?
+  content   String   @default("")
+  category  String   @default("general")
+  status    String   @default("draft")
+  featured  Boolean  @default(false)
+  metaTitle String?
+  metaDesc  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model MenuItem {
+  id       String @id @default(cuid())
+  label    String
+  href     String
+  order    Int    @default(0)
+  parent   String @default("")
+  menuName String @default("main")
+}
+
+model Channel {
+  id       String  @id @default(cuid())
+  name     String
+  country  String  @default("PK")
+  category String  @default("Sports")
+  active   Boolean @default(true)
+  order    Int     @default(0)
+}
