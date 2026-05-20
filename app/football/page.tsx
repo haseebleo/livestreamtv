@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockFootballMatches } from "@/lib/api/sports";
+import {
+  getAllRecentMatches, getAllUpcomingMatches, getMockFootballMatches,
+  LEAGUE_FLAGS, type FootballMatch,
+} from "@/lib/api/football";
+import { getFootballNews } from "@/lib/api/news";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Live Football Scores & Results",
@@ -18,208 +24,116 @@ const leagues = [
   { name: "UCL", flag: "🏆" },
 ];
 
-export default function FootballPage() {
-  const matches = getMockFootballMatches();
-  const live = matches.filter((m) => m.status === "live");
-  const upcoming = matches.filter((m) => m.status === "upcoming");
-  const completed = matches.filter((m) => m.status === "completed");
+function MatchCard({ match, type }: { match: FootballMatch; type: "recent" | "upcoming" }) {
+  const flag = LEAGUE_FLAGS[match.strLeague] ?? "⚽";
+  const hasScore = match.intHomeScore !== null && match.intAwayScore !== null;
+  const date = match.dateEvent ? new Date(match.dateEvent).toLocaleDateString("en-PK", { month: "short", day: "numeric" }) : "";
+  const time = match.strTime?.slice(0, 5) ?? "";
 
   return (
-    <div className="min-h-screen pt-20">
+    <div style={{ background: "#141422", border: `1px solid ${type === "recent" ? "#1e1e2e" : "rgba(96,165,250,0.15)"}`, borderRadius: 16, padding: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#fcd34d" }}>{flag} {match.strLeague}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, color: "#9ca3af" }}>{date}</span>
+          {type === "upcoming" && time && <span style={{ fontSize: 11, color: "#60a5fa", fontWeight: 700 }}>🕐 {time}</span>}
+          {type === "recent" && <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, background: "rgba(100,100,100,0.12)", border: "1px solid #2a2a2a", padding: "2px 8px", borderRadius: 999 }}>FT</span>}
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
+        <p style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{match.strHomeTeam}</p>
+        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #1e1e2e", borderRadius: 10, padding: "8px 16px", textAlign: "center", minWidth: 80 }}>
+          <span style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>
+            {hasScore ? `${match.intHomeScore} – ${match.intAwayScore}` : "–"}
+          </span>
+        </div>
+        <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", textAlign: "right" }}>{match.strAwayTeam}</p>
+      </div>
+      {match.intRound && (
+        <p style={{ fontSize: 11, color: "#6b7280", marginTop: 10 }}>Round {match.intRound}</p>
+      )}
+    </div>
+  );
+}
+
+export default async function FootballPage() {
+  const [recent, upcoming, news] = await Promise.all([
+    getAllRecentMatches().catch(() => getMockFootballMatches()),
+    getAllUpcomingMatches().catch(() => []),
+    getFootballNews(),
+  ]);
+
+  const recentDisplay = (recent.length > 0 ? recent : getMockFootballMatches());
+  const upcomingDisplay = upcoming;
+
+  return (
+    <div style={{ minHeight: "100vh", paddingTop: 80 }}>
+
       {/* Header */}
-      <div className="relative py-16 px-4 text-center overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 70%)",
-          }}
-        />
-        <div className="relative">
-          <span className="text-5xl block mb-4" aria-hidden="true">⚽</span>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-3">
+      <div style={{ position: "relative", padding: "3rem 1rem 2rem", textAlign: "center", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 70%)", pointerEvents: "none" }} aria-hidden="true" />
+        <div style={{ position: "relative" }}>
+          <span style={{ fontSize: 48, display: "block", marginBottom: 16 }} aria-hidden="true">⚽</span>
+          <h1 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 900, color: "#fff", marginBottom: 12 }}>
             Live <span className="gradient-text-amber">Football</span> Scores
           </h1>
-          <p className="max-w-xl mx-auto text-base" style={{ color: "#9ca3af" }}>
+          <p style={{ color: "#9ca3af", maxWidth: 500, margin: "0 auto" }}>
             Real-time scores from Premier League, La Liga, Champions League and 100+ competitions
           </p>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 pb-20">
-        {/* League filter chips (visual only) */}
-        <div className="flex flex-wrap gap-2 mb-8">
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 1rem 5rem" }}>
+
+        {/* League chips */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 32 }}>
           {leagues.map((l, i) => (
-            <span
-              key={l.name}
-              className="px-4 py-1.5 rounded-full text-sm font-semibold"
-              style={{
-                background: i === 0 ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)",
-                border: i === 0 ? "1px solid rgba(245,158,11,0.3)" : "1px solid #1e1e2e",
-                color: i === 0 ? "#fcd34d" : "#9ca3af",
-              }}
-            >
+            <span key={l.name} style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, background: i === 0 ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", border: i === 0 ? "1px solid rgba(245,158,11,0.3)" : "1px solid #1e1e2e", color: i === 0 ? "#fcd34d" : "#9ca3af" }}>
               {l.flag && `${l.flag} `}{l.name}
             </span>
           ))}
         </div>
 
-        {/* Ad slot */}
-        <div className="ad-slot mb-8" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
-
-        {/* ── LIVE MATCHES ── */}
-        {live.length > 0 && (
-          <section className="mb-12" aria-label="Live football matches">
-            <div className="flex items-center gap-2.5 mb-6">
-              <span className="live-dot w-2.5 h-2.5 bg-red-500 rounded-full" aria-hidden="true" />
-              <h2 className="text-xl font-black text-white">Live Matches</h2>
-              <span
-                className="text-xs font-bold px-2 py-0.5 rounded-full"
-                style={{
-                  background: "rgba(239,68,68,0.12)",
-                  border: "1px solid rgba(239,68,68,0.3)",
-                  color: "#f87171",
-                }}
-              >
-                {live.length} LIVE
-              </span>
-            </div>
-            <div className="space-y-4">
-              {live.map((match) => (
-                <div
-                  key={match.id}
-                  className="card-hover rounded-xl p-6"
-                  style={{ background: "#141422", border: "1px solid rgba(245,158,11,0.15)" }}
-                >
-                  {/* League + minute */}
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-sm font-semibold" style={{ color: "#fcd34d" }}>
-                      {match.leagueLogo} {match.league}
-                    </span>
-                    <div
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
-                      style={{
-                        background: "rgba(16,185,129,0.12)",
-                        border: "1px solid rgba(16,185,129,0.3)",
-                        color: "#34d399",
-                      }}
-                    >
-                      <span className="live-dot w-1.5 h-1.5 bg-green-400 rounded-full" />
-                      {match.minute}&apos;
-                    </div>
-                  </div>
-
-                  {/* Score row */}
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <div>
-                      <p className="text-base font-bold text-white leading-tight">{match.homeTeam}</p>
-                    </div>
-                    <div className="text-center">
-                      <div
-                        className="inline-flex items-center gap-3 px-5 py-3 rounded-xl"
-                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #1e1e2e" }}
-                      >
-                        <span className="text-3xl font-black text-white">{match.homeScore}</span>
-                        <span className="font-bold" style={{ color: "#9ca3af" }}>–</span>
-                        <span className="text-3xl font-black text-white">{match.awayScore}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-base font-bold text-white leading-tight">{match.awayTeam}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        <div className="ad-slot" style={{ height: 90, marginBottom: 40 }}>Advertisement</div>
 
         {/* ── UPCOMING FIXTURES ── */}
-        {upcoming.length > 0 && (
-          <section className="mb-12" aria-label="Upcoming football fixtures">
-            <h2 className="text-xl font-black text-white mb-6">📅 Upcoming Fixtures</h2>
-            <div className="space-y-3">
-              {upcoming.map((match) => (
-                <div
-                  key={match.id}
-                  className="card-hover rounded-xl p-5"
-                  style={{ background: "#141422", border: "1px solid rgba(96,165,250,0.15)" }}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-bold text-white">
-                        {match.homeTeam} vs {match.awayTeam}
-                      </p>
-                      <p className="text-sm mt-0.5" style={{ color: "#9ca3af" }}>
-                        {match.leagueLogo} {match.league}
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold" style={{ color: "#60a5fa" }}>
-                        Today {match.kickoff}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+        {upcomingDisplay.length > 0 && (
+          <section style={{ marginBottom: 48 }} aria-label="Upcoming football fixtures">
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>📅 Upcoming Fixtures</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {upcomingDisplay.slice(0, 10).map((m) => <MatchCard key={m.idEvent} match={m} type="upcoming" />)}
+            </div>
+          </section>
+        )}
+
+        <div className="ad-slot" style={{ height: 90, marginBottom: 40 }}>Advertisement</div>
+
+        {/* ── RECENT RESULTS ── */}
+        <section style={{ marginBottom: 48 }} aria-label="Recent football results">
+          <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>🏁 Recent Results</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {recentDisplay.slice(0, 15).map((m) => <MatchCard key={m.idEvent} match={m} type="recent" />)}
+          </div>
+        </section>
+
+        {/* ── NEWS ── */}
+        {news.length > 0 && (
+          <section style={{ marginBottom: 48 }} aria-label="Football news">
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>📰 Football News</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+              {news.map((item, i) => (
+                <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" style={{ display: "block", background: "#141422", border: "1px solid #1e1e2e", borderRadius: 12, padding: 16, textDecoration: "none" }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4, marginBottom: 8 }}>{item.title}</p>
+                  <p style={{ fontSize: 11, color: "#6b7280" }}>{item.source}</p>
+                </a>
               ))}
             </div>
           </section>
         )}
 
-        {/* Ad slot */}
-        <div className="ad-slot mb-12" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
-
-        {/* ── FULL TIME RESULTS ── */}
-        {completed.length > 0 && (
-          <section aria-label="Full time results">
-            <h2 className="text-xl font-black text-white mb-6">Full Time Results</h2>
-            <div className="space-y-3">
-              {completed.map((match) => (
-                <div
-                  key={match.id}
-                  className="card-hover rounded-xl p-5"
-                  style={{
-                    background: "#141422",
-                    border: "1px solid #1e1e2e",
-                    opacity: 0.8,
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-white">
-                        {match.homeTeam} vs {match.awayTeam}
-                      </p>
-                      <p className="text-sm mt-0.5" style={{ color: "#9ca3af" }}>
-                        {match.leagueLogo} {match.league}
-                      </p>
-                    </div>
-                    <p className="text-xl font-black text-white">
-                      {match.homeScore} – {match.awayScore}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* CTA */}
-        <div className="mt-12 text-center">
-          <Link
-            href="/cricket"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-opacity hover:opacity-90"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid #1e1e2e",
-              color: "#fff",
-            }}
-          >
-            🏏 Also check Cricket Scores →
+        <div style={{ textAlign: "center" }}>
+          <Link href="/cricket" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid #1e1e2e", color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: 14 }}>
+            🏏 Check Cricket Scores →
           </Link>
         </div>
       </div>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockCricketMatches } from "@/lib/api/sports";
-import { MapPin, Trophy } from "lucide-react";
+import { getCurrentMatches, getMatchStatus, formatScore, type CricMatch } from "@/lib/api/cricket";
+import { getCricketNews } from "@/lib/api/news";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Live Cricket Scores & Schedules",
@@ -9,274 +11,180 @@ export const metadata: Metadata = {
     "Live cricket scores, ball-by-ball commentary, and match schedules for Asia Cup, ICC World Cup, Test Series and T20 leagues worldwide.",
 };
 
-const countryFlags: Record<string, string> = {
-  Pakistan: "🇵🇰",
-  India: "🇮🇳",
-  England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  Australia: "🇦🇺",
-  "South Africa": "🇿🇦",
-  "New Zealand": "🇳🇿",
-  "West Indies": "🏝️",
-  "Sri Lanka": "🇱🇰",
+const FORMAT_COLORS: Record<string, { color: string; bg: string; border: string }> = {
+  odi:  { color: "#34d399", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" },
+  t20:  { color: "#a78bfa", bg: "rgba(124,58,237,0.1)", border: "rgba(124,58,237,0.2)" },
+  test: { color: "#fcd34d", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
 };
 
-const formatStyles: Record<string, { color: string; bg: string; border: string }> = {
-  ODI: { color: "#34d399", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" },
-  T20: { color: "#a78bfa", bg: "rgba(124,58,237,0.1)", border: "rgba(124,58,237,0.2)" },
-  Test: { color: "#fcd34d", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
-};
-
-export default function CricketPage() {
-  const matches = getMockCricketMatches();
-  const live = matches.filter((m) => m.status === "live");
-  const upcoming = matches.filter((m) => m.status === "upcoming");
-  const completed = matches.filter((m) => m.status === "completed");
+function MatchCard({ match }: { match: CricMatch }) {
+  const status = getMatchStatus(match);
+  const t1 = match.teams[0] ?? "Team A";
+  const t2 = match.teams[1] ?? "Team B";
+  const s1 = formatScore(match, t1);
+  const s2 = formatScore(match, t2);
+  const fmt = FORMAT_COLORS[match.matchType?.toLowerCase()] ?? FORMAT_COLORS.odi;
+  const fmtLabel = match.matchType?.toUpperCase() ?? "MATCH";
 
   return (
-    <div className="min-h-screen pt-20">
+    <div
+      style={{
+        background: "#141422",
+        border: `1px solid ${status === "live" ? "rgba(16,185,129,0.2)" : status === "upcoming" ? "rgba(96,165,250,0.15)" : "#1e1e2e"}`,
+        borderRadius: 16,
+        padding: 24,
+      }}
+    >
+      {/* Header row */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 20 }}>
+        {status === "live" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>
+            <span className="live-dot" style={{ width: 6, height: 6, background: "#e50914", borderRadius: "50%", display: "inline-block" }} />
+            LIVE
+          </div>
+        )}
+        {status === "upcoming" && (
+          <div style={{ background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.25)", color: "#60a5fa", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>
+            UPCOMING
+          </div>
+        )}
+        {status === "completed" && (
+          <div style={{ background: "rgba(100,100,100,0.12)", border: "1px solid #2a2a2a", color: "#9ca3af", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>
+            COMPLETED
+          </div>
+        )}
+        <span style={{ background: fmt.bg, border: `1px solid ${fmt.border}`, color: fmt.color, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>
+          {fmtLabel}
+        </span>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "#9ca3af" }}>{match.name}</span>
+      </div>
+
+      {/* Score grid */}
+      {status !== "upcoming" ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 16, marginBottom: 16 }}>
+          <div>
+            <p style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{t1}</p>
+            <p style={{ fontSize: 28, fontWeight: 900, color: "#10b981", lineHeight: 1 }}>{s1}</p>
+          </div>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "1px solid #1e1e2e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 12, fontWeight: 900, color: "#6b7280" }}>VS</span>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{t2}</p>
+            <p style={{ fontSize: 28, fontWeight: 900, color: "#d1d5db", lineHeight: 1 }}>{s2}</p>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <p style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t1}</p>
+          <span style={{ fontSize: 13, fontWeight: 900, color: "#6b7280" }}>VS</span>
+          <p style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t2}</p>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid #1e1e2e", fontSize: 11, color: "#9ca3af" }}>
+        {match.venue ? <span>📍 {match.venue}</span> : <span />}
+        {status === "completed" && match.status && (
+          <span style={{ color: "#34d399", fontWeight: 600 }}>✓ {match.status}</span>
+        )}
+        {status === "upcoming" && match.date && (
+          <span style={{ color: "#60a5fa" }}>🕐 {new Date(match.date).toLocaleDateString("en-PK", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default async function CricketPage() {
+  const [matches, news] = await Promise.all([
+    getCurrentMatches(),
+    getCricketNews(),
+  ]);
+
+  const live = matches.filter((m) => getMatchStatus(m) === "live");
+  const upcoming = matches.filter((m) => getMatchStatus(m) === "upcoming");
+  const completed = matches.filter((m) => getMatchStatus(m) === "completed");
+
+  return (
+    <div style={{ minHeight: "100vh", paddingTop: 80 }}>
       {/* Header */}
-      <div className="relative py-16 px-4 text-center overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(16,185,129,0.14) 0%, transparent 70%)",
-          }}
-        />
-        <div className="relative">
-          <span className="text-5xl block mb-4" aria-hidden="true">🏏</span>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-3">
+      <div style={{ position: "relative", padding: "3rem 1rem 2rem", textAlign: "center", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(16,185,129,0.14) 0%, transparent 70%)", pointerEvents: "none" }} aria-hidden="true" />
+        <div style={{ position: "relative" }}>
+          <span style={{ fontSize: 48, display: "block", marginBottom: 16 }} aria-hidden="true">🏏</span>
+          <h1 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 900, color: "#fff", marginBottom: 12 }}>
             Live <span className="gradient-text-green">Cricket</span> Scores
           </h1>
-          <p className="max-w-xl mx-auto text-base" style={{ color: "#9ca3af" }}>
+          <p style={{ color: "#9ca3af", maxWidth: 480, margin: "0 auto" }}>
             Ball-by-ball updates from every major cricket match worldwide
           </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 20, fontSize: 13, fontWeight: 700 }}>
+            {live.length > 0 && <span style={{ color: "#f87171" }}>● {live.length} Live</span>}
+            {upcoming.length > 0 && <span style={{ color: "#60a5fa" }}>● {upcoming.length} Upcoming</span>}
+            {completed.length > 0 && <span style={{ color: "#9ca3af" }}>● {completed.length} Results</span>}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 pb-20">
-        {/* Filter chips (visual only — Server Component) */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {["All", "Live", "Upcoming", "Completed"].map((tab, i) => (
-            <span
-              key={tab}
-              className="px-4 py-1.5 rounded-full text-sm font-semibold"
-              style={{
-                background: i === 0 ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.04)",
-                border: i === 0 ? "1px solid rgba(16,185,129,0.3)" : "1px solid #1e1e2e",
-                color: i === 0 ? "#34d399" : "#9ca3af",
-              }}
-            >
-              {tab}
-            </span>
-          ))}
-        </div>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 1rem 5rem" }}>
 
-        {/* Ad slot */}
-        <div className="ad-slot mb-8" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
+        <div className="ad-slot" style={{ height: 90, marginBottom: 32 }}>Advertisement</div>
 
-        {/* ── LIVE MATCHES ── */}
+        {/* ── LIVE ── */}
         {live.length > 0 && (
-          <section className="mb-12" aria-label="Live cricket matches">
-            <div className="flex items-center gap-2.5 mb-6">
-              <span className="live-dot w-2.5 h-2.5 bg-red-500 rounded-full" aria-hidden="true" />
-              <h2 className="text-xl font-black text-white">Live Matches</h2>
-              <span
-                className="text-xs font-bold px-2 py-0.5 rounded-full"
-                style={{
-                  background: "rgba(239,68,68,0.12)",
-                  border: "1px solid rgba(239,68,68,0.3)",
-                  color: "#f87171",
-                }}
-              >
-                {live.length} LIVE
-              </span>
+          <section style={{ marginBottom: 48 }} aria-label="Live cricket matches">
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+              <span className="live-dot" style={{ width: 10, height: 10, background: "#e50914", borderRadius: "50%", display: "inline-block" }} />
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>Live Matches</h2>
+              <span style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>{live.length} LIVE</span>
             </div>
-            <div className="space-y-4">
-              {live.map((match) => {
-                const fmt = formatStyles[match.format] ?? formatStyles.ODI;
-                return (
-                  <div
-                    key={match.id}
-                    className="card-hover rounded-xl p-6"
-                    style={{ background: "#141422", border: "1px solid rgba(16,185,129,0.15)" }}
-                  >
-                    {/* Top row */}
-                    <div className="flex flex-wrap items-center gap-3 mb-5">
-                      <div
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                        style={{
-                          background: "rgba(239,68,68,0.12)",
-                          border: "1px solid rgba(239,68,68,0.3)",
-                          color: "#f87171",
-                        }}
-                      >
-                        <span className="live-dot w-1.5 h-1.5 bg-red-400 rounded-full" />
-                        LIVE
-                      </div>
-                      <span
-                        className="px-2.5 py-1 rounded-full text-xs font-bold"
-                        style={{ background: fmt.bg, border: `1px solid ${fmt.border}`, color: fmt.color }}
-                      >
-                        {match.format}
-                      </span>
-                      <div
-                        className="ml-auto flex items-center gap-1.5 text-sm"
-                        style={{ color: "#9ca3af" }}
-                      >
-                        <Trophy className="w-3.5 h-3.5" aria-hidden="true" />
-                        {match.tournament}
-                      </div>
-                    </div>
-
-                    {/* Score grid */}
-                    <div className="grid grid-cols-3 items-center gap-4 mb-5">
-                      <div>
-                        <p className="text-xl font-black text-white mb-1">
-                          {countryFlags[match.teams.home.name] ?? ""} {match.teams.home.name}
-                        </p>
-                        <p className="text-3xl font-black" style={{ color: "#10b981" }}>
-                          {match.teams.home.score}
-                        </p>
-                        <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
-                          {match.teams.home.overs} overs
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center mx-auto"
-                          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #1e1e2e" }}
-                        >
-                          <span className="text-sm font-black" style={{ color: "#9ca3af" }}>VS</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-black text-white mb-1">
-                          {match.teams.away.name} {countryFlags[match.teams.away.name] ?? ""}
-                        </p>
-                        <p className="text-3xl font-black" style={{ color: "#d1d5db" }}>
-                          {match.teams.away.score}
-                        </p>
-                        <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
-                          {match.teams.away.overs} overs
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Bottom */}
-                    <div
-                      className="flex items-center gap-2 pt-4 text-xs"
-                      style={{ borderTop: "1px solid #1e1e2e", color: "#9ca3af" }}
-                    >
-                      <MapPin className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-                      {match.venue}
-                    </div>
-                  </div>
-                );
-              })}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {live.map((m) => <MatchCard key={m.id} match={m} />)}
             </div>
           </section>
         )}
 
-        {/* ── UPCOMING MATCHES ── */}
+        {/* ── UPCOMING ── */}
         {upcoming.length > 0 && (
-          <section className="mb-12" aria-label="Upcoming cricket matches">
-            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-              <span style={{ color: "#60a5fa" }}>🕐</span> Upcoming Matches
-            </h2>
-            <div className="space-y-3">
-              {upcoming.map((match) => (
-                <div
-                  key={match.id}
-                  className="card-hover rounded-xl p-5"
-                  style={{ background: "#141422", border: "1px solid rgba(96,165,250,0.15)" }}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="font-bold text-white">
-                        {countryFlags[match.teams.home.name] ?? ""} {match.teams.home.name}{" "}
-                        <span style={{ color: "#9ca3af" }}>vs</span>{" "}
-                        {match.teams.away.name} {countryFlags[match.teams.away.name] ?? ""}
-                      </p>
-                      <p className="text-sm mt-1" style={{ color: "#9ca3af" }}>
-                        {match.tournament} &middot; {match.format}
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold" style={{ color: "#60a5fa" }}>
-                        {match.startTime}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
-                        {match.venue}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          <section style={{ marginBottom: 48 }} aria-label="Upcoming cricket matches">
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>🕐 Upcoming Matches</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {upcoming.map((m) => <MatchCard key={m.id} match={m} />)}
             </div>
           </section>
         )}
 
-        {/* Ad slot */}
-        <div className="ad-slot mb-12" style={{ height: "90px" }}>
-          Advertisement — Google AdSense
-        </div>
+        <div className="ad-slot" style={{ height: 90, marginBottom: 48 }}>Advertisement</div>
 
         {/* ── RECENT RESULTS ── */}
         {completed.length > 0 && (
-          <section aria-label="Recent cricket results">
-            <h2 className="text-xl font-black text-white mb-6">Recent Results</h2>
-            <div className="space-y-3">
-              {completed.map((match) => (
-                <div
-                  key={match.id}
-                  className="card-hover rounded-xl p-5"
-                  style={{
-                    background: "#141422",
-                    border: "1px solid #1e1e2e",
-                    opacity: 0.85,
-                  }}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="font-bold text-white">
-                        {countryFlags[match.teams.home.name] ?? ""} {match.teams.home.name}{" "}
-                        vs {match.teams.away.name} {countryFlags[match.teams.away.name] ?? ""}
-                      </p>
-                      <p className="text-sm mt-0.5" style={{ color: "#9ca3af" }}>
-                        {match.tournament} &middot; {match.format}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-white">
-                        {match.teams.home.score} / {match.teams.away.score}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: "#34d399" }}>
-                        {match.result}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+          <section style={{ marginBottom: 48 }} aria-label="Recent cricket results">
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>Recent Results</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {completed.map((m) => <MatchCard key={m.id} match={m} />)}
+            </div>
+          </section>
+        )}
+
+        {/* ── NEWS ── */}
+        {news.length > 0 && (
+          <section style={{ marginBottom: 48 }} aria-label="Cricket news">
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>📰 Cricket News</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+              {news.map((item, i) => (
+                <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" style={{ display: "block", background: "#141422", border: "1px solid #1e1e2e", borderRadius: 12, padding: 16, textDecoration: "none" }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4, marginBottom: 8 }}>{item.title}</p>
+                  <p style={{ fontSize: 11, color: "#6b7280" }}>{item.source}</p>
+                </a>
               ))}
             </div>
           </section>
         )}
 
-        {/* CTA */}
-        <div className="mt-12 text-center">
-          <Link
-            href="/football"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-opacity hover:opacity-90"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid #1e1e2e",
-              color: "#fff",
-            }}
-          >
-            ⚽ Also check Football Scores →
+        <div style={{ textAlign: "center", marginTop: 48 }}>
+          <Link href="/football" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid #1e1e2e", color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: 14 }}>
+            ⚽ Check Football Scores →
           </Link>
         </div>
       </div>

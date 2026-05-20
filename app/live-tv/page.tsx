@@ -11,23 +11,43 @@ interface Channel {
 }
 
 const channels: Channel[] = [
-  { name: "ICC TV (Cricket)", country: "🌍", category: "Cricket", ytId: "UCiWrjBhlICf_L_RK5y6Vrxw", type: "channel" },
+  // ── Cricket
+  { name: "ICC TV", country: "🌍", category: "Cricket", ytId: "UCiWrjBhlICf_L_RK5y6Vrxw", type: "channel" },
+  { name: "PTV Sports", country: "🇵🇰", category: "Cricket", ytId: "EfWvGaJCgYQ", type: "live" },
+  { name: "Sky Sports Cricket", country: "🇬🇧", category: "Cricket", ytId: null, type: "link" },
+  { name: "Willow Cricket", country: "🇺🇸", category: "Cricket", ytId: null, type: "link" },
+  { name: "Star Sports 1", country: "🇮🇳", category: "Cricket", ytId: null, type: "link" },
+  // ── Sports
   { name: "Sky Sports News", country: "🇬🇧", category: "Sports", ytId: "qEJbRPgBBcE", type: "live" },
+  { name: "ESPN FC", country: "🇺🇸", category: "Sports", ytId: null, type: "link" },
+  { name: "beIN Sports", country: "🇶🇦", category: "Sports", ytId: null, type: "link" },
+  { name: "Ten Sports", country: "🇵🇰", category: "Sports", ytId: null, type: "link" },
+  // ── Pakistani News
   { name: "Geo News", country: "🇵🇰", category: "News", ytId: "N8SEBU2PZ-A", type: "live" },
   { name: "ARY News Live", country: "🇵🇰", category: "News", ytId: "3IYTP1OdPD8", type: "live" },
-  { name: "Al Jazeera English", country: "🇶🇦", category: "News", ytId: "F422C9SfNI8", type: "live" },
-  { name: "DW News", country: "🇩🇪", category: "News", ytId: "F_ZpbBt3o0o", type: "live" },
-  { name: "France 24 English", country: "🇫🇷", category: "News", ytId: "1KSuvPsRRRI", type: "live" },
-  { name: "Eurosport", country: "🇪🇺", category: "Sports", ytId: null, type: "link" },
-  { name: "PTV Sports", country: "🇵🇰", category: "Cricket", ytId: "EfWvGaJCgYQ", type: "live" },
+  { name: "Samaa TV", country: "🇵🇰", category: "News", ytId: "RFJxBmUNZIc", type: "live" },
+  { name: "Bol News", country: "🇵🇰", category: "News", ytId: "S8yMfwzM3eY", type: "live" },
+  { name: "Express News", country: "🇵🇰", category: "News", ytId: "qSSERiU4-PQ", type: "live" },
+  // ── International News
+  { name: "Al Jazeera English", country: "🇶🇦", category: "International", ytId: "F422C9SfNI8", type: "live" },
+  { name: "DW News", country: "🇩🇪", category: "International", ytId: "F_ZpbBt3o0o", type: "live" },
+  { name: "France 24 English", country: "🇫🇷", category: "International", ytId: "1KSuvPsRRRI", type: "live" },
+  { name: "CNN International", country: "🇺🇸", category: "International", ytId: "HW9ygT6oIJo", type: "live" },
+  { name: "Sky News", country: "🇬🇧", category: "International", ytId: "9Auq9mYxFEE", type: "live" },
+  { name: "BBC News", country: "🇬🇧", category: "International", ytId: "w_Ma8oQLmSM", type: "live" },
+  // ── Entertainment
+  { name: "Hum TV", country: "🇵🇰", category: "Entertainment", ytId: "5hH2LrEBWN8", type: "live" },
+  { name: "ARY Digital", country: "🇵🇰", category: "Entertainment", ytId: "7eDQb0V3HXY", type: "live" },
+  { name: "Geo Entertainment", country: "🇵🇰", category: "Entertainment", ytId: null, type: "link" },
 ];
 
-const categories = ["All", "Cricket", "Sports", "News"];
+const categories = ["All", "Cricket", "Sports", "News", "International", "Entertainment"];
 
 const categoryStyles: Record<string, { color: string; bg: string; border: string }> = {
   Cricket: { color: "#34d399", bg: "rgba(0,179,65,0.1)", border: "rgba(0,179,65,0.2)" },
   Sports: { color: "#60a5fa", bg: "rgba(0,112,243,0.1)", border: "rgba(0,112,243,0.2)" },
   News: { color: "#f87171", bg: "rgba(229,9,20,0.1)", border: "rgba(229,9,20,0.2)" },
+  International: { color: "#fcd34d", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
   Entertainment: { color: "#f472b6", bg: "rgba(236,72,153,0.1)", border: "rgba(236,72,153,0.2)" },
 };
 

@@ -95,6 +95,54 @@ export async function getSimilarShows(id: number) {
   return data?.results?.slice(0, 12) ?? [];
 }
 
+export async function getBollywoodMovies(page = 1) {
+  const data = await tmdb("/discover/movie", { with_original_language: "hi", sort_by: "popularity.desc", page });
+  return data?.results ?? getMockMovies();
+}
+
+export async function getUrduDramas(page = 1) {
+  const data = await tmdb("/discover/tv", { with_original_language: "ur", sort_by: "popularity.desc", page });
+  if (data?.results?.length) return data.results;
+  // fallback: popular Pakistani/South Asian dramas
+  const fallback = await tmdb("/discover/tv", { with_original_language: "hi", sort_by: "popularity.desc", page });
+  return fallback?.results ?? getMockShows();
+}
+
+export async function getAnimeShows(page = 1) {
+  const data = await tmdb("/discover/tv", { with_genres: "16", with_original_language: "ja", sort_by: "popularity.desc", page });
+  return data?.results ?? getMockShows();
+}
+
+export async function getUpcomingMovies() {
+  const data = await tmdb("/movie/upcoming");
+  return data?.results ?? getMockMovies();
+}
+
+export async function getTopRatedShows() {
+  const data = await tmdb("/tv/top_rated");
+  return data?.results ?? getMockShows();
+}
+
+export async function getComedyMovies() {
+  const data = await tmdb("/discover/movie", { with_genres: "35", sort_by: "popularity.desc" });
+  return data?.results ?? getMockMovies();
+}
+
+export async function getHorrorMovies() {
+  const data = await tmdb("/discover/movie", { with_genres: "27", sort_by: "popularity.desc" });
+  return data?.results ?? getMockMovies();
+}
+
+export async function getThrillerMovies() {
+  const data = await tmdb("/discover/movie", { with_genres: "53", sort_by: "popularity.desc" });
+  return data?.results ?? getMockMovies();
+}
+
+export async function getDocumentaries() {
+  const data = await tmdb("/discover/movie", { with_genres: "99", sort_by: "popularity.desc" });
+  return data?.results ?? getMockMovies();
+}
+
 export const MOVIE_GENRES = [
   { id: 28, name: "Action" },
   { id: 35, name: "Comedy" },
