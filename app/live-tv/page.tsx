@@ -7,358 +7,264 @@ interface Channel {
   country: string;
   category: string;
   ytId: string | null;
-  type: "live" | "channel" | "link";
+  type: "channel" | "live" | "link";
+  website?: string;
 }
 
+// "channel" type = YouTube channel ID (live_stream?channel=...) — stable, always points to current live broadcast
+// "live"    type = specific YouTube video ID — direct embed
+// "link"    type = no stream, show external website button
+
 const channels: Channel[] = [
-  // ── Cricket
-  { name: "ICC TV", country: "🌍", category: "Cricket", ytId: "UCiWrjBhlICf_L_RK5y6Vrxw", type: "channel" },
-  { name: "PTV Sports", country: "🇵🇰", category: "Cricket", ytId: "EfWvGaJCgYQ", type: "live" },
-  { name: "Sky Sports Cricket", country: "🇬🇧", category: "Cricket", ytId: null, type: "link" },
-  { name: "Willow Cricket", country: "🇺🇸", category: "Cricket", ytId: null, type: "link" },
-  { name: "Star Sports 1", country: "🇮🇳", category: "Cricket", ytId: null, type: "link" },
-  // ── Sports
-  { name: "Sky Sports News", country: "🇬🇧", category: "Sports", ytId: "qEJbRPgBBcE", type: "live" },
-  { name: "ESPN FC", country: "🇺🇸", category: "Sports", ytId: null, type: "link" },
-  { name: "beIN Sports", country: "🇶🇦", category: "Sports", ytId: null, type: "link" },
-  { name: "Ten Sports", country: "🇵🇰", category: "Sports", ytId: null, type: "link" },
-  // ── Pakistani News
-  { name: "Geo News", country: "🇵🇰", category: "News", ytId: "N8SEBU2PZ-A", type: "live" },
-  { name: "ARY News Live", country: "🇵🇰", category: "News", ytId: "3IYTP1OdPD8", type: "live" },
-  { name: "Samaa TV", country: "🇵🇰", category: "News", ytId: "RFJxBmUNZIc", type: "live" },
-  { name: "Bol News", country: "🇵🇰", category: "News", ytId: "S8yMfwzM3eY", type: "live" },
-  { name: "Express News", country: "🇵🇰", category: "News", ytId: "qSSERiU4-PQ", type: "live" },
-  // ── International News
-  { name: "Al Jazeera English", country: "🇶🇦", category: "International", ytId: "F422C9SfNI8", type: "live" },
-  { name: "DW News", country: "🇩🇪", category: "International", ytId: "F_ZpbBt3o0o", type: "live" },
-  { name: "France 24 English", country: "🇫🇷", category: "International", ytId: "1KSuvPsRRRI", type: "live" },
-  { name: "CNN International", country: "🇺🇸", category: "International", ytId: "HW9ygT6oIJo", type: "live" },
-  { name: "Sky News", country: "🇬🇧", category: "International", ytId: "9Auq9mYxFEE", type: "live" },
-  { name: "BBC News", country: "🇬🇧", category: "International", ytId: "w_Ma8oQLmSM", type: "live" },
-  // ── Entertainment
-  { name: "Hum TV", country: "🇵🇰", category: "Entertainment", ytId: "5hH2LrEBWN8", type: "live" },
-  { name: "ARY Digital", country: "🇵🇰", category: "Entertainment", ytId: "7eDQb0V3HXY", type: "live" },
-  { name: "Geo Entertainment", country: "🇵🇰", category: "Entertainment", ytId: null, type: "link" },
+  // ── 🏏 CRICKET ──
+  { name: "ICC TV",           country: "🌍", category: "Cricket",       ytId: "UCiWrjBhlICf_L_RK5y6Vrxw", type: "channel" },
+  { name: "PTV Sports",       country: "🇵🇰", category: "Cricket",       ytId: "EfWvGaJCgYQ",              type: "live",    website: "https://ptvsports.pk" },
+  { name: "PCB Official",     country: "🇵🇰", category: "Cricket",       ytId: "UCnBsO0I_4KKJD-GYJmBi5xA", type: "channel", website: "https://pcb.com.pk" },
+  { name: "Sky Sports Cricket",country:"🇬🇧", category: "Cricket",       ytId: null,                       type: "link",    website: "https://www.skysports.com/watch" },
+  { name: "Willow Cricket",   country: "🇺🇸", category: "Cricket",       ytId: null,                       type: "link",    website: "https://www.willowcricket.com" },
+  { name: "Star Sports 1",    country: "🇮🇳", category: "Cricket",       ytId: null,                       type: "link",    website: "https://www.hotstar.com" },
+  { name: "Sony LIV Sports",  country: "🇮🇳", category: "Cricket",       ytId: null,                       type: "link",    website: "https://www.sonyliv.com" },
+
+  // ── ⚽ SPORTS ──
+  { name: "Sky Sports News",  country: "🇬🇧", category: "Sports",        ytId: "qEJbRPgBBcE",              type: "live",    website: "https://www.skysports.com" },
+  { name: "beIN Sports",      country: "🇶🇦", category: "Sports",        ytId: null,                       type: "link",    website: "https://www.beinsports.com" },
+  { name: "ESPN",             country: "🇺🇸", category: "Sports",        ytId: "UCiWrjBhlICf_L_RK5y6Vrxw", type: "link",   website: "https://www.espn.com/watch" },
+  { name: "Ten Sports",       country: "🇵🇰", category: "Sports",        ytId: null,                       type: "link",    website: "https://www.tensports.com" },
+  { name: "SuperSport",       country: "🇿🇦", category: "Sports",        ytId: null,                       type: "link",    website: "https://www.supersport.com" },
+  { name: "Eurosport",        country: "🇪🇺", category: "Sports",        ytId: null,                       type: "link",    website: "https://www.eurosport.com" },
+
+  // ── 🇵🇰 PAKISTAN NEWS ──
+  { name: "Geo News",         country: "🇵🇰", category: "Pakistan",      ytId: "N8SEBU2PZ-A",              type: "live",    website: "https://www.geo.tv/live" },
+  { name: "ARY News",         country: "🇵🇰", category: "Pakistan",      ytId: "3IYTP1OdPD8",              type: "live",    website: "https://arynews.tv/live" },
+  { name: "Samaa TV",         country: "🇵🇰", category: "Pakistan",      ytId: "RFJxBmUNZIc",              type: "live",    website: "https://www.samaa.tv/live" },
+  { name: "Bol News",         country: "🇵🇰", category: "Pakistan",      ytId: "S8yMfwzM3eY",              type: "live",    website: "https://www.bolnews.com/live" },
+  { name: "Express News",     country: "🇵🇰", category: "Pakistan",      ytId: "qSSERiU4-PQ",              type: "live",    website: "https://www.express.pk/live" },
+  { name: "Dunya News",       country: "🇵🇰", category: "Pakistan",      ytId: "UCr0rLbQxqsJyWmIhvLdqU1A", type: "channel", website: "https://dunyanews.tv/live" },
+  { name: "92 News",          country: "🇵🇰", category: "Pakistan",      ytId: "UCKKvGvLlm0P7boBnI0x2eKg", type: "channel", website: "https://www.92newshd.tv/live" },
+  { name: "Hum News",         country: "🇵🇰", category: "Pakistan",      ytId: "UCNDin94hBWgfBGxSXegxSmw", type: "channel", website: "https://humnews.pk/live" },
+  { name: "Dawn News",        country: "🇵🇰", category: "Pakistan",      ytId: "UCdNtBIGKE-K0m3J7v_cFMcw", type: "channel", website: "https://www.dawn.com/videos" },
+  { name: "A Plus",           country: "🇵🇰", category: "Pakistan",      ytId: "UCEAUICyFGRdIFUFGSFJJfbA", type: "channel", website: "https://aplusent.com" },
+
+  // ── 🌍 INTERNATIONAL NEWS ──
+  { name: "Al Jazeera",       country: "🇶🇦", category: "International", ytId: "UCNye-wNBqNL5ZzHSJdHvTpg", type: "channel", website: "https://www.aljazeera.com/live" },
+  { name: "DW News",          country: "🇩🇪", category: "International", ytId: "UCknLrEdhRCp1aegoMqRaCZg", type: "channel", website: "https://www.dw.com/en/live-tv" },
+  { name: "France 24",        country: "🇫🇷", category: "International", ytId: "UCQfwfsi5VrQ8yKZ-UWmAqaw", type: "channel", website: "https://www.france24.com/en/live" },
+  { name: "BBC News",         country: "🇬🇧", category: "International", ytId: "UC16niRr0X2B-ovMETtMiDzg", type: "channel", website: "https://www.bbc.com/news/live" },
+  { name: "CNN International",country: "🇺🇸", category: "International", ytId: "UCupvZG-5ko_eiXAupbDfxWw", type: "channel", website: "https://edition.cnn.com/live-tv" },
+  { name: "Sky News",         country: "🇬🇧", category: "International", ytId: "UCoMdktPbSTixAyNGwb-UYkQ", type: "channel", website: "https://news.sky.com/watch-live" },
+  { name: "RT News",          country: "🇷🇺", category: "International", ytId: "UCpwvZwUam-URkxB7g4USKpg", type: "channel", website: "https://www.rt.com/on-air" },
+  { name: "Euronews",         country: "🇪🇺", category: "International", ytId: "UCg4QNMZan43qDiRoK08CEMA", type: "channel", website: "https://www.euronews.com/live" },
+  { name: "TRT World",        country: "🇹🇷", category: "International", ytId: "UC7fWeaHhqgM4Ry-RMpM2YYw", type: "channel", website: "https://www.trtworld.com/live" },
+  { name: "NHK World Japan",  country: "🇯🇵", category: "International", ytId: "UCfB-yzl7KeOGADFLFbHFWGg", type: "channel", website: "https://www3.nhk.or.jp/nhkworld/en/live" },
+  { name: "WION",             country: "🇮🇳", category: "International", ytId: "UCjOHNS-SFuBHmIAF38-JxQg", type: "channel", website: "https://www.wionews.com/live-tv" },
+  { name: "CGTN",             country: "🇨🇳", category: "International", ytId: "UCqpB6nT6MxTMrOIBTmGkqEQ", type: "channel", website: "https://www.cgtn.com/live" },
+  { name: "India Today",      country: "🇮🇳", category: "International", ytId: "UCYPvAwZP8pZhSMW8qs7cVCw", type: "channel", website: "https://www.indiatoday.in/livetv" },
+  { name: "Republic TV",      country: "🇮🇳", category: "International", ytId: "UCEAFtRx3WNNy2vhzJBk2hSQ", type: "channel", website: "https://www.republicworld.com/livetv" },
+
+  // ── 📺 ENTERTAINMENT ──
+  { name: "Hum TV",           country: "🇵🇰", category: "Entertainment", ytId: "5hH2LrEBWN8",              type: "live",    website: "https://www.humtv.com.pk/live" },
+  { name: "ARY Digital",      country: "🇵🇰", category: "Entertainment", ytId: "7eDQb0V3HXY",              type: "live",    website: "https://arytv.com/live" },
+  { name: "Geo Entertainment",country: "🇵🇰", category: "Entertainment", ytId: "UCFfRUFHmolXVBMHiJwCKJYg", type: "channel", website: "https://www.geo.tv/geoentertainment/live" },
+  { name: "Urdu 1",           country: "🇵🇰", category: "Entertainment", ytId: "UCdSNkSzZMM6WlMcBjhIIzFg", type: "channel", website: "https://urdu1.tv" },
+  { name: "TV One",           country: "🇵🇰", category: "Entertainment", ytId: "UC-lzCbUb4i30EGMRzWz4sPQ", type: "channel", website: "https://tvone.tv/live" },
+  { name: "Zee TV",           country: "🇮🇳", category: "Entertainment", ytId: null,                       type: "link",    website: "https://zee5.com" },
+  { name: "Colors TV",        country: "🇮🇳", category: "Entertainment", ytId: null,                       type: "link",    website: "https://www.colorstv.com/live-tv" },
 ];
 
-const categories = ["All", "Cricket", "Sports", "News", "International", "Entertainment"];
+const CATEGORIES = ["All", "Cricket", "Sports", "Pakistan", "International", "Entertainment"];
 
-const categoryStyles: Record<string, { color: string; bg: string; border: string }> = {
-  Cricket: { color: "#34d399", bg: "rgba(0,179,65,0.1)", border: "rgba(0,179,65,0.2)" },
-  Sports: { color: "#60a5fa", bg: "rgba(0,112,243,0.1)", border: "rgba(0,112,243,0.2)" },
-  News: { color: "#f87171", bg: "rgba(229,9,20,0.1)", border: "rgba(229,9,20,0.2)" },
-  International: { color: "#fcd34d", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
-  Entertainment: { color: "#f472b6", bg: "rgba(236,72,153,0.1)", border: "rgba(236,72,153,0.2)" },
+const CAT_STYLES: Record<string, { color: string; bg: string; border: string }> = {
+  Cricket:       { color: "#34d399", bg: "rgba(0,179,65,0.12)",   border: "rgba(0,179,65,0.25)"  },
+  Sports:        { color: "#60a5fa", bg: "rgba(0,112,243,0.12)",  border: "rgba(0,112,243,0.25)" },
+  Pakistan:      { color: "#f87171", bg: "rgba(229,9,20,0.12)",   border: "rgba(229,9,20,0.25)"  },
+  International: { color: "#fcd34d", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.25)"},
+  Entertainment: { color: "#f472b6", bg: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.25)"},
 };
 
-function getEmbedUrl(channel: Channel): string | null {
-  if (!channel.ytId) return null;
-  if (channel.type === "channel") {
-    return `https://www.youtube.com/embed/live_stream?channel=${channel.ytId}&autoplay=1&rel=0`;
+function getEmbedUrl(ch: Channel): string | null {
+  if (!ch.ytId) return null;
+  if (ch.type === "channel") {
+    return `https://www.youtube.com/embed/live_stream?channel=${ch.ytId}&autoplay=1&rel=0&modestbranding=1`;
   }
-  return `https://www.youtube.com/embed/${channel.ytId}?autoplay=1&rel=0`;
+  return `https://www.youtube.com/embed/${ch.ytId}?autoplay=1&rel=0&modestbranding=1`;
 }
 
 export default function LiveTvPage() {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+  const [selected, setSelected] = useState<Channel | null>(null);
 
-  const filtered =
-    activeCategory === "All"
-      ? channels
-      : channels.filter((c) => c.category === activeCategory);
-
-  const embedUrl = selectedChannel ? getEmbedUrl(selectedChannel) : null;
-  const style = selectedChannel ? (categoryStyles[selectedChannel.category] ?? categoryStyles.News) : null;
+  const filtered = activeCategory === "All" ? channels : channels.filter((c) => c.category === activeCategory);
+  const embedUrl = selected ? getEmbedUrl(selected) : null;
+  const catStyle = selected ? (CAT_STYLES[selected.category] ?? CAT_STYLES.Pakistan) : null;
+  const hasStream = selected && selected.ytId !== null;
 
   return (
     <div style={{ minHeight: "100vh", paddingTop: 64, background: "#0a0a0a" }}>
 
       {/* ── HEADER ── */}
-      <div
-        style={{
-          position: "relative",
-          padding: "2.5rem 1rem 1.5rem",
-          textAlign: "center",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(229,9,20,0.1) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-          aria-hidden="true"
-        />
+      <div style={{ position: "relative", padding: "2.5rem 1rem 1.5rem", textAlign: "center", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(229,9,20,0.1) 0%, transparent 70%)", pointerEvents: "none" }} aria-hidden="true" />
         <div style={{ position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 14 }}>
             <span style={{ fontSize: 40 }} aria-hidden="true">📡</span>
             <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(229,9,20,0.12)", border: "1px solid rgba(229,9,20,0.3)", borderRadius: 999, padding: "4px 12px" }}>
-              <span className="live-dot" style={{ width: 8, height: 8, background: "#e50914", borderRadius: "50%", display: "inline-block" }} aria-hidden="true" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#f87171", letterSpacing: "0.1em" }}>LIVE</span>
+              <span className="live-dot" style={{ width: 8, height: 8, background: "#e50914", borderRadius: "50%", display: "inline-block" }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#f87171", letterSpacing: "0.1em" }}>LIVE TV</span>
             </div>
           </div>
-          <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 900, color: "#ffffff", marginBottom: 8 }}>
-            Free <span className="gradient-text">Live TV</span> Channels
+          <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 900, color: "#fff", marginBottom: 10 }}>
+            Live TV Channels
           </h1>
-          <p style={{ color: "#b3b3b3", fontSize: 14, maxWidth: 480, margin: "0 auto" }}>
-            Watch live sports, news and entertainment channels online — free
+          <p style={{ color: "#9ca3af", maxWidth: 480, margin: "0 auto" }}>
+            {channels.length} channels from Cricket, Sports, News &amp; Entertainment worldwide
           </p>
         </div>
       </div>
 
-      <div
-        style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-          padding: "1.5rem 1rem 4rem",
-          display: "grid",
-          gridTemplateColumns: "280px 1fr",
-          gap: 24,
-        }}
-      >
-        {/* ── LEFT SIDEBAR ── */}
-        <aside>
-          {/* Category filter */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-            {categories.map((c) => (
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 1rem 5rem" }}>
+
+        {/* Category filter */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28, justifyContent: "center" }}>
+          {CATEGORIES.map((cat) => {
+            const style = CAT_STYLES[cat];
+            const isActive = activeCategory === cat;
+            return (
               <button
-                key={c}
-                onClick={() => setActiveCategory(c)}
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
                 style={{
-                  padding: "5px 14px",
+                  padding: "7px 18px",
                   borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  background: activeCategory === c ? "rgba(229,9,20,0.15)" : "rgba(255,255,255,0.04)",
-                  border: activeCategory === c ? "1px solid rgba(229,9,20,0.3)" : "1px solid #2a2a2a",
-                  color: activeCategory === c ? "#f87171" : "#b3b3b3",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  border: isActive ? `1px solid ${style?.border ?? "rgba(229,9,20,0.3)"}` : "1px solid #1e1e2e",
+                  background: isActive ? (style?.bg ?? "rgba(229,9,20,0.12)") : "rgba(255,255,255,0.03)",
+                  color: isActive ? (style?.color ?? "#f87171") : "#9ca3af",
                   cursor: "pointer",
-                  transition: "all 0.2s",
                 }}
               >
-                {c}
+                {cat} {cat !== "All" && <span style={{ opacity: 0.6 }}>({channels.filter((c) => c.category === cat).length})</span>}
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          {/* Channel list */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {filtered.map((ch) => {
-              const cs = categoryStyles[ch.category] ?? categoryStyles.News;
-              const isSelected = selectedChannel?.name === ch.name;
-              return (
+        {/* ── PLAYER ── */}
+        {selected && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 20 }}>{selected.country}</span>
+                <div>
+                  <p style={{ fontSize: 18, fontWeight: 800, color: "#fff" }}>{selected.name}</p>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
+                    background: catStyle?.bg, border: `1px solid ${catStyle?.border}`, color: catStyle?.color,
+                  }}>
+                    {selected.category}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                {selected.website && (
+                  <a href={selected.website} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12, fontWeight: 700, color: "#60a5fa", textDecoration: "none", padding: "6px 14px", border: "1px solid rgba(96,165,250,0.3)", borderRadius: 8, background: "rgba(96,165,250,0.08)" }}>
+                    Official Site ↗
+                  </a>
+                )}
                 <button
-                  key={ch.name}
-                  onClick={() => {
-                    if (ch.type === "link") {
-                      window.open("https://www.eurosport.com/live", "_blank");
-                    } else {
-                      setSelectedChannel(ch);
-                    }
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 12px",
-                    background: isSelected ? "rgba(229,9,20,0.1)" : "#1c1c1c",
-                    border: isSelected ? "1px solid rgba(229,9,20,0.3)" : "1px solid #2a2a2a",
-                    borderRadius: 8,
-                    cursor: "pointer",
-                    textAlign: "left",
-                    transition: "all 0.2s",
-                    width: "100%",
-                  }}
+                  onClick={() => setSelected(null)}
+                  style={{ fontSize: 13, fontWeight: 700, color: "#9ca3af", background: "rgba(255,255,255,0.05)", border: "1px solid #2a2a2a", borderRadius: 8, padding: "6px 14px", cursor: "pointer" }}
                 >
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 8,
-                      background: "linear-gradient(135deg, rgba(229,9,20,0.2), rgba(0,0,0,0.4))",
-                      border: "1px solid #2a2a2a",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 16,
-                      flexShrink: 0,
-                    }}
-                    aria-hidden="true"
-                  >
-                    📺
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: isSelected ? "#f87171" : "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {ch.name}
-                    </p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                      <span
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 700,
-                          padding: "1px 5px",
-                          borderRadius: 3,
-                          background: cs.bg,
-                          border: `1px solid ${cs.border}`,
-                          color: cs.color,
-                        }}
-                      >
-                        {ch.category}
-                      </span>
-                      <span style={{ fontSize: 12 }} aria-label={`Country: ${ch.country}`}>{ch.country}</span>
-                    </div>
-                  </div>
-                  {ch.type !== "link" && ch.ytId && (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                        background: "rgba(229,9,20,0.12)",
-                        border: "1px solid rgba(229,9,20,0.25)",
-                        borderRadius: 3,
-                        padding: "1px 5px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <span className="live-dot" style={{ width: 5, height: 5, background: "#e50914", borderRadius: "50%", display: "inline-block" }} aria-hidden="true" />
-                      <span style={{ fontSize: 8, fontWeight: 700, color: "#f87171" }}>LIVE</span>
-                    </div>
-                  )}
-                  {ch.type === "link" && (
-                    <span style={{ fontSize: 10, color: "#6b7280" }}>↗</span>
-                  )}
+                  ✕ Close
                 </button>
-              );
-            })}
-          </div>
-        </aside>
+              </div>
+            </div>
 
-        {/* ── RIGHT: PLAYER ── */}
-        <div style={{ minWidth: 0 }}>
-          {selectedChannel && embedUrl ? (
-            <>
-              {/* Player */}
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  aspectRatio: "16/9",
-                  background: "#000",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  border: "1px solid #2a2a2a",
-                  marginBottom: 16,
-                }}
-              >
+            {hasStream && embedUrl ? (
+              <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, background: "#000", borderRadius: 12, overflow: "hidden", border: "1px solid #1e1e2e" }}>
                 <iframe
+                  key={embedUrl}
                   src={embedUrl}
-                  title={selectedChannel.name}
-                  style={{ width: "100%", height: "100%", border: "none" }}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                  title={selected.name}
                 />
               </div>
+            ) : (
+              <div style={{ background: "#141422", border: "1px solid #1e1e2e", borderRadius: 12, padding: "48px 32px", textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📺</div>
+                <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 8 }}>{selected.name} — Official Stream</p>
+                <p style={{ fontSize: 14, color: "#9ca3af", marginBottom: 24 }}>
+                  This channel broadcasts via its official website (subscription may be required).
+                </p>
+                {selected.website && (
+                  <a href={selected.website} target="_blank" rel="noopener noreferrer"
+                    style={{ display: "inline-block", background: "#e50914", color: "#fff", padding: "12px 28px", borderRadius: 8, fontWeight: 700, textDecoration: "none", fontSize: 14 }}>
+                    Watch on Official Site ↗
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
-              {/* Channel info */}
-              <div
+        {/* ── CHANNEL GRID ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+          {filtered.map((ch) => {
+            const style = CAT_STYLES[ch.category] ?? CAT_STYLES.Pakistan;
+            const isActive = selected?.name === ch.name;
+            const canStream = ch.ytId !== null;
+            return (
+              <button
+                key={ch.name}
+                onClick={() => setSelected(ch)}
                 style={{
-                  background: "#1c1c1c",
-                  border: "1px solid #2a2a2a",
-                  borderRadius: 10,
-                  padding: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 12,
-                  marginBottom: 24,
+                  background: isActive ? "rgba(229,9,20,0.1)" : "#141422",
+                  border: isActive ? "1px solid rgba(229,9,20,0.4)" : "1px solid #1e1e2e",
+                  borderRadius: 12,
+                  padding: "16px 14px",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "border-color 0.15s, background 0.15s",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 10,
-                      background: "linear-gradient(135deg, rgba(229,9,20,0.25), rgba(0,0,0,0.5))",
-                      border: "1px solid #2a2a2a",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 22,
-                    }}
-                    aria-hidden="true"
-                  >
-                    📺
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: "#ffffff" }}>{selectedChannel.name}</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-                      {style && (
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 8px", borderRadius: 3, background: style.bg, border: `1px solid ${style.border}`, color: style.color }}>
-                          {selectedChannel.category}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <span style={{ fontSize: 24, flexShrink: 0 }}>{ch.country}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 6 }}>
+                      {ch.name}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999, background: style.bg, border: `1px solid ${style.border}`, color: style.color }}>
+                        {ch.category}
+                      </span>
+                      {canStream ? (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: "#34d399", display: "flex", alignItems: "center", gap: 3 }}>
+                          <span className="live-dot" style={{ width: 5, height: 5, background: "#34d399", borderRadius: "50%", display: "inline-block" }} /> LIVE
                         </span>
+                      ) : (
+                        <span style={{ fontSize: 9, color: "#6b7280", fontWeight: 600 }}>EXT</span>
                       )}
-                      <span style={{ fontSize: 14 }} aria-label={`Country: ${selectedChannel.country}`}>{selectedChannel.country}</span>
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(229,9,20,0.12)", border: "1px solid rgba(229,9,20,0.3)", borderRadius: 6, padding: "6px 14px" }}>
-                  <span className="live-dot" style={{ width: 8, height: 8, background: "#e50914", borderRadius: "50%", display: "inline-block" }} aria-hidden="true" />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#f87171" }}>LIVE NOW</span>
-                </div>
-              </div>
-
-              {/* Ad slot */}
-              <div className="ad-slot" style={{ height: 90, marginBottom: 24 }}>Advertisement</div>
-            </>
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                aspectRatio: "16/9",
-                background: "#141414",
-                border: "2px dashed #2a2a2a",
-                borderRadius: 12,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 16,
-                marginBottom: 24,
-              }}
-            >
-              <span style={{ fontSize: 56 }} aria-hidden="true">📡</span>
-              <p style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>Select a Channel</p>
-              <p style={{ fontSize: 13, color: "#6b7280", textAlign: "center", maxWidth: 300 }}>
-                Choose a channel from the sidebar to start watching live
-              </p>
-            </div>
-          )}
-
-          {/* More channels coming soon */}
-          <div
-            style={{
-              background: "#1c1c1c",
-              border: "1px solid #2a2a2a",
-              borderRadius: 10,
-              padding: 20,
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#ffffff", marginBottom: 8 }}>
-              🚀 More Channels Coming Soon
-            </p>
-            <p style={{ fontSize: 13, color: "#b3b3b3", lineHeight: 1.6 }}>
-              We&apos;re adding more live sports and entertainment channels every week.
-              Cricket, Football, Tennis, Boxing and much more.
-            </p>
-          </div>
+              </button>
+            );
+          })}
         </div>
+
+        {/* Legend */}
+        <div style={{ marginTop: 32, display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, color: "#9ca3af", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 6, height: 6, background: "#34d399", borderRadius: "50%", display: "inline-block" }} />
+            LIVE = streams directly here
+          </span>
+          <span style={{ fontSize: 12, color: "#9ca3af" }}>EXT = links to official website</span>
+        </div>
+
+        <div className="ad-slot" style={{ height: 90, marginTop: 40 }}>Advertisement</div>
       </div>
     </div>
   );

@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  getAllRecentMatches, getAllUpcomingMatches, getMockFootballMatches,
-  LEAGUE_FLAGS, type FootballMatch,
-} from "@/lib/api/football";
+import { getAllFootballMatches, FOOTBALL_LEAGUES, type ESPNMatch } from "@/lib/api/espn";
 import { getFootballNews } from "@/lib/api/news";
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Live Football Scores & Results",
@@ -14,57 +11,100 @@ export const metadata: Metadata = {
     "Live football scores from Premier League, La Liga, Champions League, Bundesliga and more. Real-time updates.",
 };
 
-const leagues = [
-  { name: "All Leagues", flag: "" },
-  { name: "Premier League", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { name: "La Liga", flag: "🇪🇸" },
-  { name: "Bundesliga", flag: "🇩🇪" },
-  { name: "Serie A", flag: "🇮🇹" },
-  { name: "Ligue 1", flag: "🇫🇷" },
-  { name: "UCL", flag: "🏆" },
-];
+function MatchCard({ match }: { match: ESPNMatch }) {
+  const isLive      = match.status === "live";
+  const isUpcoming  = match.status === "upcoming";
+  const isCompleted = match.status === "completed";
 
-function MatchCard({ match, type }: { match: FootballMatch; type: "recent" | "upcoming" }) {
-  const flag = LEAGUE_FLAGS[match.strLeague] ?? "⚽";
-  const hasScore = match.intHomeScore !== null && match.intAwayScore !== null;
-  const date = match.dateEvent ? new Date(match.dateEvent).toLocaleDateString("en-PK", { month: "short", day: "numeric" }) : "";
-  const time = match.strTime?.slice(0, 5) ?? "";
+  const dateStr = match.date
+    ? new Date(match.date).toLocaleDateString("en-PK", { weekday: "short", month: "short", day: "numeric" })
+    : "";
+  const timeStr = match.date
+    ? new Date(match.date).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
+    : "";
 
   return (
-    <div style={{ background: "#141422", border: `1px solid ${type === "recent" ? "#1e1e2e" : "rgba(96,165,250,0.15)"}`, borderRadius: 16, padding: 20 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#fcd34d" }}>{flag} {match.strLeague}</span>
+    <div
+      style={{
+        background: "#141422",
+        border: `1px solid ${isLive ? "rgba(229,9,20,0.25)" : isUpcoming ? "rgba(96,165,250,0.15)" : "#1e1e2e"}`,
+        borderRadius: 16,
+        padding: 20,
+        transition: "border-color 0.2s",
+      }}
+    >
+      {/* League + status row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#fcd34d" }}>
+          {match.leagueFlag} {match.league}
+        </span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "#9ca3af" }}>{date}</span>
-          {type === "upcoming" && time && <span style={{ fontSize: 11, color: "#60a5fa", fontWeight: 700 }}>🕐 {time}</span>}
-          {type === "recent" && <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, background: "rgba(100,100,100,0.12)", border: "1px solid #2a2a2a", padding: "2px 8px", borderRadius: 999 }}>FT</span>}
+          {isLive && (
+            <span style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(229,9,20,0.15)", border: "1px solid rgba(229,9,20,0.35)", color: "#f87171", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>
+              <span className="live-dot" style={{ width: 6, height: 6, background: "#e50914", borderRadius: "50%", display: "inline-block" }} />
+              {match.detail || "LIVE"}
+            </span>
+          )}
+          {isCompleted && (
+            <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, background: "rgba(100,100,100,0.1)", border: "1px solid #2a2a2a", padding: "3px 10px", borderRadius: 999 }}>
+              {match.detail || "FT"}
+            </span>
+          )}
+          {isUpcoming && (
+            <span style={{ fontSize: 11, color: "#60a5fa", fontWeight: 600 }}>
+              {dateStr} · {timeStr}
+            </span>
+          )}
         </div>
       </div>
+
+      {/* Score / matchup */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
-        <p style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{match.strHomeTeam}</p>
-        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #1e1e2e", borderRadius: 10, padding: "8px 16px", textAlign: "center", minWidth: 80 }}>
-          <span style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>
-            {hasScore ? `${match.intHomeScore} – ${match.intAwayScore}` : "–"}
-          </span>
+        <div>
+          {match.homeLogo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={match.homeLogo} alt={match.homeTeam} width={28} height={28} style={{ objectFit: "contain", marginBottom: 6 }} />
+          )}
+          <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", lineHeight: 1.3 }}>{match.homeTeam}</p>
         </div>
-        <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", textAlign: "right" }}>{match.strAwayTeam}</p>
+
+        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #1e1e2e", borderRadius: 12, padding: isUpcoming ? "10px 20px" : "8px 18px", textAlign: "center", minWidth: 88 }}>
+          {isUpcoming ? (
+            <span style={{ fontSize: 18, fontWeight: 900, color: "#6b7280" }}>–</span>
+          ) : (
+            <span style={{ fontSize: 26, fontWeight: 900, color: isLive ? "#fff" : "#d1d5db" }}>
+              {match.homeScore ?? 0} – {match.awayScore ?? 0}
+            </span>
+          )}
+        </div>
+
+        <div style={{ textAlign: "right" }}>
+          {match.awayLogo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={match.awayLogo} alt={match.awayTeam} width={28} height={28} style={{ objectFit: "contain", marginBottom: 6, marginLeft: "auto", display: "block" }} />
+          )}
+          <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", lineHeight: 1.3 }}>{match.awayTeam}</p>
+        </div>
       </div>
-      {match.intRound && (
-        <p style={{ fontSize: 11, color: "#6b7280", marginTop: 10 }}>Round {match.intRound}</p>
+
+      {match.venue && (
+        <p style={{ fontSize: 11, color: "#6b7280", marginTop: 12, paddingTop: 10, borderTop: "1px solid #1e1e2e" }}>
+          📍 {match.venue}
+        </p>
       )}
     </div>
   );
 }
 
 export default async function FootballPage() {
-  const [recent, upcoming, news] = await Promise.all([
-    getAllRecentMatches().catch(() => getMockFootballMatches()),
-    getAllUpcomingMatches().catch(() => []),
+  const [allMatches, news] = await Promise.all([
+    getAllFootballMatches(),
     getFootballNews(),
   ]);
 
-  const recentDisplay = (recent.length > 0 ? recent : getMockFootballMatches());
-  const upcomingDisplay = upcoming;
+  const live      = allMatches.filter((m) => m.status === "live");
+  const upcoming  = allMatches.filter((m) => m.status === "upcoming");
+  const completed = allMatches.filter((m) => m.status === "completed");
 
   return (
     <div style={{ minHeight: "100vh", paddingTop: 80 }}>
@@ -77,44 +117,67 @@ export default async function FootballPage() {
           <h1 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 900, color: "#fff", marginBottom: 12 }}>
             Live <span className="gradient-text-amber">Football</span> Scores
           </h1>
-          <p style={{ color: "#9ca3af", maxWidth: 500, margin: "0 auto" }}>
-            Real-time scores from Premier League, La Liga, Champions League and 100+ competitions
+          <p style={{ color: "#9ca3af", maxWidth: 520, margin: "0 auto 20px" }}>
+            Real-time scores from {FOOTBALL_LEAGUES.length} leagues — Premier League, La Liga, UCL and more
           </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 24, fontSize: 13, fontWeight: 700 }}>
+            {live.length > 0      && <span style={{ color: "#f87171" }}>● {live.length} Live</span>}
+            {upcoming.length > 0  && <span style={{ color: "#60a5fa" }}>● {upcoming.length} Upcoming</span>}
+            {completed.length > 0 && <span style={{ color: "#9ca3af" }}>● {completed.length} Results</span>}
+          </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 1rem 5rem" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 1rem 5rem" }}>
 
-        {/* League chips */}
+        {/* League filter chips */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 32 }}>
-          {leagues.map((l, i) => (
-            <span key={l.name} style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, background: i === 0 ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", border: i === 0 ? "1px solid rgba(245,158,11,0.3)" : "1px solid #1e1e2e", color: i === 0 ? "#fcd34d" : "#9ca3af" }}>
-              {l.flag && `${l.flag} `}{l.name}
+          {FOOTBALL_LEAGUES.map((l, i) => (
+            <span key={l.slug} style={{ padding: "6px 14px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: i === 0 ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", border: i === 0 ? "1px solid rgba(245,158,11,0.3)" : "1px solid #1e1e2e", color: i === 0 ? "#fcd34d" : "#9ca3af" }}>
+              {l.flag} {l.name}
             </span>
           ))}
         </div>
 
         <div className="ad-slot" style={{ height: 90, marginBottom: 40 }}>Advertisement</div>
 
-        {/* ── UPCOMING FIXTURES ── */}
-        {upcomingDisplay.length > 0 && (
-          <section style={{ marginBottom: 48 }} aria-label="Upcoming football fixtures">
-            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>📅 Upcoming Fixtures</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {upcomingDisplay.slice(0, 10).map((m) => <MatchCard key={m.idEvent} match={m} type="upcoming" />)}
+        {/* ── LIVE ── */}
+        {live.length > 0 && (
+          <section style={{ marginBottom: 48 }} aria-label="Live football matches">
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+              <span className="live-dot" style={{ width: 10, height: 10, background: "#e50914", borderRadius: "50%", display: "inline-block" }} />
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>Live Now</h2>
+              <span style={{ background: "rgba(229,9,20,0.12)", border: "1px solid rgba(229,9,20,0.3)", color: "#f87171", fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 999 }}>
+                {live.length} LIVE
+              </span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+              {live.map((m) => <MatchCard key={m.id} match={m} />)}
             </div>
           </section>
         )}
 
-        <div className="ad-slot" style={{ height: 90, marginBottom: 40 }}>Advertisement</div>
+        {/* ── UPCOMING ── */}
+        {upcoming.length > 0 && (
+          <section style={{ marginBottom: 48 }} aria-label="Upcoming fixtures">
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>📅 Upcoming Fixtures</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+              {upcoming.slice(0, 20).map((m) => <MatchCard key={m.id} match={m} />)}
+            </div>
+          </section>
+        )}
+
+        <div className="ad-slot" style={{ height: 90, marginBottom: 48 }}>Advertisement</div>
 
         {/* ── RECENT RESULTS ── */}
-        <section style={{ marginBottom: 48 }} aria-label="Recent football results">
-          <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>🏁 Recent Results</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {recentDisplay.slice(0, 15).map((m) => <MatchCard key={m.idEvent} match={m} type="recent" />)}
-          </div>
-        </section>
+        {completed.length > 0 && (
+          <section style={{ marginBottom: 48 }} aria-label="Recent results">
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>🏁 Recent Results</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+              {completed.slice(0, 24).map((m) => <MatchCard key={m.id} match={m} />)}
+            </div>
+          </section>
+        )}
 
         {/* ── NEWS ── */}
         {news.length > 0 && (
@@ -122,9 +185,13 @@ export default async function FootballPage() {
             <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 24 }}>📰 Football News</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
               {news.map((item, i) => (
-                <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" style={{ display: "block", background: "#141422", border: "1px solid #1e1e2e", borderRadius: 12, padding: 16, textDecoration: "none" }}>
+                <a key={i} href={item.link} target="_blank" rel="noopener noreferrer"
+                  style={{ display: "block", background: "#141422", border: "1px solid #1e1e2e", borderRadius: 12, padding: 16, textDecoration: "none" }}>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4, marginBottom: 8 }}>{item.title}</p>
-                  <p style={{ fontSize: 11, color: "#6b7280" }}>{item.source}</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 11, color: "#6b7280" }}>{item.source}</span>
+                    <span style={{ fontSize: 10, color: "#60a5fa" }}>→</span>
+                  </div>
                 </a>
               ))}
             </div>

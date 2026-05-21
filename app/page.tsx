@@ -9,7 +9,7 @@ import {
   POSTER, BACKDROP,
 } from "@/lib/api/tmdb";
 import { getCurrentMatches, getMatchStatus, formatScore } from "@/lib/api/cricket";
-import { getAllRecentMatches, getAllUpcomingMatches, LEAGUE_FLAGS, getMockFootballMatches } from "@/lib/api/football";
+import { getAllFootballMatches, type ESPNMatch } from "@/lib/api/espn";
 import { getLatestNews } from "@/lib/api/news";
 import { JsonLd } from "@/components/seo/json-ld";
 
@@ -245,32 +245,37 @@ async function CricketSection() {
 // ── FOOTBALL SECTION ──
 
 async function FootballSection() {
-  const matches = await getAllRecentMatches().catch(() => getMockFootballMatches());
-  const display = (matches.length > 0 ? matches : getMockFootballMatches()).slice(0, 3);
+  const all = await getAllFootballMatches();
+  const live = all.filter((m) => m.status === "live").slice(0, 3);
+  const display = live.length > 0 ? live : all.slice(0, 3);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-      {display.map((match) => {
-        const flag = LEAGUE_FLAGS[match.strLeague] ?? "⚽";
-        const isCompleted = match.strStatus === "FT" || match.strStatus === "AET" || match.strStatus === "PEN";
-        const isUpcoming = match.strStatus === "NS" || !match.intHomeScore;
+      {display.map((match: ESPNMatch) => {
+        const isLive     = match.status === "live";
+        const isUpcoming = match.status === "upcoming";
         return (
-          <Link key={match.idEvent} href="/football" style={{ display: "block", background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 12, padding: 16, textDecoration: "none" }}>
+          <Link key={match.id} href="/football" style={{ display: "block", background: "#1c1c1c", border: `1px solid ${isLive ? "rgba(229,9,20,0.25)" : "#2a2a2a"}`, borderRadius: 12, padding: 16, textDecoration: "none" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#f5c518", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>{flag} {match.strLeague}</span>
-              {isCompleted && <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700 }}>FT</span>}
-              {isUpcoming && <span style={{ fontSize: 10, color: "#f5c518", fontWeight: 600 }}>🕐 {match.strTime?.slice(0, 5)}</span>}
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#f5c518", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>{match.leagueFlag} {match.league}</span>
+              {isLive && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(229,9,20,0.15)", border: "1px solid rgba(229,9,20,0.3)", color: "#f87171", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
+                  <span className="live-dot" style={{ width: 5, height: 5, background: "#e50914", borderRadius: "50%", display: "inline-block" }} />
+                  {match.detail || "LIVE"}
+                </span>
+              )}
+              {!isLive && !isUpcoming && <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700 }}>{match.detail || "FT"}</span>}
+              {isUpcoming && <span style={{ fontSize: 10, color: "#f5c518" }}>🕐 {new Date(match.date).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}</span>}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{match.strHomeTeam}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{match.homeTeam}</p>
               <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "6px 10px", textAlign: "center", minWidth: 68 }}>
                 <span style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>
-                  {isUpcoming ? "–" : `${match.intHomeScore ?? 0} – ${match.intAwayScore ?? 0}`}
+                  {isUpcoming ? "–" : `${match.homeScore ?? 0} – ${match.awayScore ?? 0}`}
                 </span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", textAlign: "right" }}>{match.strAwayTeam}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", textAlign: "right" }}>{match.awayTeam}</p>
             </div>
-            <p style={{ fontSize: 10, color: "#6b7280", marginTop: 8 }}>📅 {match.dateEvent}</p>
           </Link>
         );
       })}
