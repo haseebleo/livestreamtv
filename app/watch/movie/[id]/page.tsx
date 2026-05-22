@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getMovieDetails, getSimilarMovies, POSTER, BACKDROP } from "@/lib/api/tmdb";
+import { getMovieDetails, getShowDetails, getSimilarMovies, getSimilarShows, POSTER, BACKDROP } from "@/lib/api/tmdb";
 import { db } from "@/lib/db";
 import { StreamPlayer, type VideoServer } from "@/components/ui/stream-player";
 import { WatchlistButton } from "@/components/ui/watchlist-button";
@@ -12,23 +12,32 @@ import { WatchTracker } from "@/components/ui/watch-tracker";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://livestreamtv.pk";
 
+async function resolveContent(id: number) {
+  const movie = await getMovieDetails(id);
+  if (movie) return { content: movie, isShow: false };
+  const show = await getShowDetails(id);
+  if (show) return { content: { ...show, title: show.name, release_date: show.first_air_date }, isShow: true };
+  return null;
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const movie = await getMovieDetails(parseInt(id));
-  if (!movie) return { title: "Watch Movie" };
-  const year = movie.release_date?.slice(0, 4);
+  const resolved = await resolveContent(parseInt(id));
+  if (!resolved) return { title: "Watch Online" };
+  const { content } = resolved;
+  const year = content.release_date?.slice(0, 4);
   return {
-    title: `Watch ${movie.title}${year ? ` (${year})` : ""} Online Free`,
-    description: `Watch ${movie.title} online free in HD. ${movie.overview?.slice(0, 120) ?? ""}`,
+    title: `Watch ${content.title}${year ? ` (${year})` : ""} Online Free`,
+    description: `Watch ${content.title} online free in HD. ${content.overview?.slice(0, 120) ?? ""}`,
     robots: { index: true, follow: true },
     openGraph: {
-      title: `Watch ${movie.title} Online | LiveStreamTV.pk`,
-      description: movie.overview ?? "",
-      images: POSTER(movie.poster_path) ? [POSTER(movie.poster_path)!] : [],
+      title: `Watch ${content.title} Online | LiveStreamTV.pk`,
+      description: content.overview ?? "",
+      images: POSTER(content.poster_path) ? [POSTER(content.poster_path)!] : [],
     },
   };
 }
@@ -41,16 +50,21 @@ export default async function WatchMoviePage({
   const { id } = await params;
   const movieId = parseInt(id);
 
-  const [movie, similar, videoLinks] = await Promise.all([
-    getMovieDetails(movieId),
-    getSimilarMovies(movieId),
+  const [resolved, videoLinks] = await Promise.all([
+    resolveContent(movieId),
     db.videoLink.findMany({
-      where: { contentId: String(movieId), contentType: "movie", isActive: true },
+      where: { contentId: String(movieId), contentType: { in: ["movie", "show"] }, isActive: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     }),
   ]);
 
-  if (!movie) notFound();
+  if (!resolved) notFound();
+  const { content: movie, isShow } = resolved;
+
+  // Fetch similar content in parallel after we know the type
+  const similar = isShow
+    ? await getSimilarShows(movieId)
+    : await getSimilarMovies(movieId);
 
   const poster   = POSTER(movie.poster_path);
   const backdrop = BACKDROP(movie.backdrop_path);
@@ -65,13 +79,20 @@ export default async function WatchMoviePage({
     lang: v.lang,
   }));
 
-  // Auto-generated fallback servers from free embed services (TMDB ID-based)
-  const fallbackServers: VideoServer[] = adminServers.length === 0 ? [
-    { id: "vs1", serverName: "Server 1", embedUrl: `https://vidsrc.to/embed/movie/${movieId}`,          quality: "HD",  lang: "Multi" },
-    { id: "vs2", serverName: "Server 2", embedUrl: `https://vidsrc.me/embed/movie?tmdb=${movieId}`,     quality: "HD",  lang: "Multi" },
-    { id: "vs3", serverName: "Server 3", embedUrl: `https://www.2embed.cc/embed/${movieId}`,             quality: "HD",  lang: "Multi" },
-    { id: "vs4", serverName: "Server 4", embedUrl: `https://embed.su/embed/movie/${movieId}`,            quality: "HD",  lang: "Multi" },
-  ] : [];
+  // Auto-generated fallback servers — use TV or movie embed URLs depending on content type
+  const fallbackServers: VideoServer[] = adminServers.length === 0 ? (
+    isShow ? [
+      { id: "vs1", serverName: "Server 1", embedUrl: `https://vidsrc.to/embed/tv/${movieId}/1/1`,              quality: "HD", lang: "Multi" },
+      { id: "vs2", serverName: "Server 2", embedUrl: `https://vidsrc.me/embed/tv?tmdb=${movieId}&season=1&episode=1`, quality: "HD", lang: "Multi" },
+      { id: "vs3", serverName: "Server 3", embedUrl: `https://www.2embed.cc/embedtv/${movieId}&s=1&e=1`,         quality: "HD", lang: "Multi" },
+      { id: "vs4", serverName: "Server 4", embedUrl: `https://embed.su/embed/tv/${movieId}/1/1`,                 quality: "HD", lang: "Multi" },
+    ] : [
+      { id: "vs1", serverName: "Server 1", embedUrl: `https://vidsrc.to/embed/movie/${movieId}`,            quality: "HD", lang: "Multi" },
+      { id: "vs2", serverName: "Server 2", embedUrl: `https://vidsrc.me/embed/movie?tmdb=${movieId}`,       quality: "HD", lang: "Multi" },
+      { id: "vs3", serverName: "Server 3", embedUrl: `https://www.2embed.cc/embed/${movieId}`,               quality: "HD", lang: "Multi" },
+      { id: "vs4", serverName: "Server 4", embedUrl: `https://embed.su/embed/movie/${movieId}`,              quality: "HD", lang: "Multi" },
+    ]
+  ) : [];
 
   const servers: VideoServer[] = [...adminServers, ...fallbackServers];
 
