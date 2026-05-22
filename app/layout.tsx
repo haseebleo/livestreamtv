@@ -32,11 +32,13 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://livestreamtv.pk",
     siteName: "LiveStreamTV.pk",
+    images: ["https://livestreamtv.pk/api/og?title=LiveStreamTV.pk&type=live&sub=Live+Cricket%2C+Football+%26+Streaming+Guide"],
   },
   twitter: {
     card: "summary_large_image",
     title: "LiveStreamTV.pk",
     description: "Live sports scores and streaming guide — Pakistan's #1 hub.",
+    images: ["https://livestreamtv.pk/api/og?title=LiveStreamTV.pk&type=live&sub=Live+Cricket%2C+Football+%26+Streaming+Guide"],
   },
   robots: { index: true, follow: true },
   other: {
@@ -47,7 +49,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#080810",
+  themeColor: "#e50914",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

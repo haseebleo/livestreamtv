@@ -5,10 +5,21 @@ import { getCricketNews } from "@/lib/api/news";
 
 export const revalidate = 60;
 
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://livestreamtv.pk";
+
 export const metadata: Metadata = {
   title: "Live Cricket Scores & Schedules",
   description:
     "Live cricket scores, ball-by-ball commentary, and match schedules for Asia Cup, ICC World Cup, Test Series and T20 leagues worldwide.",
+  openGraph: {
+    title: "Live Cricket Scores & Schedules | LiveStreamTV.pk",
+    description: "Ball-by-ball updates from every major cricket match — ICC, PSL, T20, ODI and Test matches worldwide.",
+    images: [`${BASE}/api/og?title=Live+Cricket+Scores&type=cricket&sub=ICC%2C+PSL%2C+T20+%26+Test+Matches`],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [`${BASE}/api/og?title=Live+Cricket+Scores&type=cricket&sub=ICC%2C+PSL%2C+T20+%26+Test+Matches`],
+  },
 };
 
 const FORMAT_COLORS: Record<string, { color: string; bg: string; border: string }> = {
@@ -106,8 +117,20 @@ export default async function CricketPage() {
   const upcoming = matches.filter((m) => getMatchStatus(m) === "upcoming");
   const completed = matches.filter((m) => getMatchStatus(m) === "completed");
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: "Live Cricket Matches",
+    description: "Real-time cricket scores and match schedules worldwide",
+    url: `${BASE}/cricket`,
+    sport: "Cricket",
+    eventStatus: live.length > 0 ? "https://schema.org/EventScheduled" : "https://schema.org/EventScheduled",
+    location: { "@type": "VirtualLocation", url: `${BASE}/cricket` },
+  };
+
   return (
     <div style={{ minHeight: "100vh", paddingTop: 80 }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Header */}
       <div style={{ position: "relative", padding: "3rem 1rem 2rem", textAlign: "center", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(16,185,129,0.14) 0%, transparent 70%)", pointerEvents: "none" }} aria-hidden="true" />

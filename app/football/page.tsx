@@ -5,10 +5,21 @@ import { getFootballNews } from "@/lib/api/news";
 
 export const revalidate = 60;
 
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://livestreamtv.pk";
+
 export const metadata: Metadata = {
   title: "Live Football Scores & Results",
   description:
     "Live football scores from Premier League, La Liga, Champions League, Bundesliga and more. Real-time updates.",
+  openGraph: {
+    title: "Live Football Scores & Results | LiveStreamTV.pk",
+    description: "Real-time scores from Premier League, La Liga, UCL, Bundesliga, Serie A and more.",
+    images: [`${BASE}/api/og?title=Live+Football+Scores&type=football&sub=PL%2C+La+Liga%2C+UCL+%26+More`],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [`${BASE}/api/og?title=Live+Football+Scores&type=football&sub=PL%2C+La+Liga%2C+UCL+%26+More`],
+  },
 };
 
 function MatchCard({ match }: { match: ESPNMatch }) {
@@ -106,8 +117,19 @@ export default async function FootballPage() {
   const upcoming  = allMatches.filter((m) => m.status === "upcoming");
   const completed = allMatches.filter((m) => m.status === "completed");
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: "Live Football Scores",
+    description: "Real-time football scores from major European leagues and international competitions",
+    url: `${BASE}/football`,
+    sport: "Football",
+    location: { "@type": "VirtualLocation", url: `${BASE}/football` },
+  };
+
   return (
     <div style={{ minHeight: "100vh", paddingTop: 80 }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Header */}
       <div style={{ position: "relative", padding: "3rem 1rem 2rem", textAlign: "center", overflow: "hidden" }}>

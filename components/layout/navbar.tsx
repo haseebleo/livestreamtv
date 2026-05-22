@@ -13,6 +13,8 @@ const navLinks = [
   { href: "/tv-shows", label: "TV Shows", icon: "📺" },
   { href: "/live-tv", label: "Live TV", icon: "📡" },
   { href: "/news", label: "News", icon: "📰" },
+  { href: "/standings", label: "Standings", icon: "🏆" },
+  { href: "/highlights", label: "Highlights", icon: "🎬" },
 ];
 
 export default function Navbar() {
