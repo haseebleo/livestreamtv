@@ -57,13 +57,23 @@ export default async function WatchMoviePage({
   const year     = movie.release_date?.slice(0, 4);
   const runtime  = movie.runtime ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m` : null;
 
-  const servers: VideoServer[] = videoLinks.map((v) => ({
+  const adminServers: VideoServer[] = videoLinks.map((v) => ({
     id: v.id,
     serverName: v.serverName,
     embedUrl: v.embedUrl,
     quality: v.quality,
     lang: v.lang,
   }));
+
+  // Auto-generated fallback servers from free embed services (TMDB ID-based)
+  const fallbackServers: VideoServer[] = adminServers.length === 0 ? [
+    { id: "vs1", serverName: "Server 1", embedUrl: `https://vidsrc.to/embed/movie/${movieId}`,          quality: "HD",  lang: "Multi" },
+    { id: "vs2", serverName: "Server 2", embedUrl: `https://vidsrc.me/embed/movie?tmdb=${movieId}`,     quality: "HD",  lang: "Multi" },
+    { id: "vs3", serverName: "Server 3", embedUrl: `https://www.2embed.cc/embed/${movieId}`,             quality: "HD",  lang: "Multi" },
+    { id: "vs4", serverName: "Server 4", embedUrl: `https://embed.su/embed/movie/${movieId}`,            quality: "HD",  lang: "Multi" },
+  ] : [];
+
+  const servers: VideoServer[] = [...adminServers, ...fallbackServers];
 
   const cast = movie.credits?.cast?.slice(0, 12) ?? [];
 
