@@ -66,3 +66,41 @@ model Channel {
   active   Boolean @default(true)
   order    Int     @default(0)
 }
+
+// Stores playable video sources for any content item
+model VideoLink {
+  id          String   @id @default(cuid())
+  // content identity
+  contentId   String   // TMDB movie/show ID or drama slug
+  contentType String   // "movie" | "show" | "drama"
+  season      Int      @default(1)
+  episode     Int      @default(0)  // 0 = full movie / no episode
+  // server info
+  serverName  String   @default("Server 1")
+  embedUrl    String   // full embed URL or direct video URL
+  quality     String   @default("HD")
+  lang        String   @default("Urdu")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([contentId, contentType, season, episode])
+}
+
+// Optional: store basic content metadata so admin doesn't need TMDB
+model ContentMeta {
+  id           String   @id @default(cuid())
+  contentId    String   @unique // TMDB id or drama slug
+  contentType  String   // "movie" | "show" | "drama"
+  title        String
+  posterUrl    String?
+  backdropUrl  String?
+  year         Int?
+  genre        String?
+  synopsis     String?
+  totalEpisodes Int?
+  totalSeasons  Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
