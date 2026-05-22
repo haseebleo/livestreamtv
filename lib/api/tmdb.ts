@@ -143,6 +143,52 @@ export async function getDocumentaries() {
   return data?.results ?? getMockMovies();
 }
 
+export async function getPakistaniMovies(page = 1) {
+  const data = await tmdb("/discover/movie", {
+    with_original_language: "ur",
+    sort_by: "popularity.desc",
+    page,
+  });
+  return { results: data?.results ?? [], totalPages: data?.total_pages ?? 1 };
+}
+
+export async function getTurkishDramas(page = 1) {
+  const data = await tmdb("/discover/tv", {
+    with_original_language: "tr",
+    sort_by: "popularity.desc",
+    "vote_count.gte": 50,
+    page,
+  });
+  return { results: data?.results ?? getMockShows(), totalPages: data?.total_pages ?? 1 };
+}
+
+export async function getBollywoodMoviesPage(page = 1) {
+  const data = await tmdb("/discover/movie", {
+    with_original_language: "hi",
+    sort_by: "popularity.desc",
+    page,
+  });
+  return { results: data?.results ?? getMockMovies(), totalPages: data?.total_pages ?? 1 };
+}
+
+export async function getKoreanDramas(page = 1) {
+  const data = await tmdb("/discover/tv", {
+    with_original_language: "ko",
+    sort_by: "popularity.desc",
+    "vote_count.gte": 50,
+    page,
+  });
+  return { results: data?.results ?? getMockShows(), totalPages: data?.total_pages ?? 1 };
+}
+
+export async function getMovieTrailerKey(movie: { videos?: { results?: { key: string; site: string; type: string }[] } }): Promise<string | null> {
+  const videos = movie?.videos?.results ?? [];
+  const trailer = videos.find((v) => v.site === "YouTube" && v.type === "Trailer")
+    ?? videos.find((v) => v.site === "YouTube" && v.type === "Teaser")
+    ?? videos.find((v) => v.site === "YouTube");
+  return trailer?.key ?? null;
+}
+
 export const MOVIE_GENRES = [
   { id: 28, name: "Action" },
   { id: 35, name: "Comedy" },

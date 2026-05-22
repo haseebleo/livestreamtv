@@ -6,6 +6,7 @@ import {
   getMovieWatchProviders,
   getSimilarMovies,
   getTrendingMovies,
+  getMovieTrailerKey,
   POSTER,
   BACKDROP,
 } from "@/lib/api/tmdb";
@@ -71,6 +72,7 @@ export default async function MovieDetailPage({ params }: PageProps) {
   const allProviders = [...streamFlat, ...streamFree];
   const cast: { id: number; name: string; character: string; profile_path: string | null }[] =
     movie.credits?.cast?.slice(0, 15) ?? [];
+  const trailerKey = getMovieTrailerKey(movie);
 
   const movieJsonLd = {
     "@context": "https://schema.org",
@@ -231,6 +233,26 @@ export default async function MovieDetailPage({ params }: PageProps) {
               )}
             </div>
           </div>
+
+          {/* ── TRAILER ── */}
+          {trailerKey && (
+            <section style={{ paddingBottom: "2rem" }} aria-label="Trailer">
+              <div className="section-divider" style={{ marginBottom: 24 }} />
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", marginBottom: 16 }}>
+                🎬 Watch Trailer — {movie.title}
+              </h2>
+              <div style={{ position: "relative", paddingBottom: "56.25%", borderRadius: 14, overflow: "hidden", background: "#000", maxWidth: 800 }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${trailerKey}?rel=0&modestbranding=1`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                  title={`${movie.title} Official Trailer`}
+                  loading="lazy"
+                />
+              </div>
+            </section>
+          )}
 
           {/* ── CAST ── */}
           {cast.length > 0 && (
