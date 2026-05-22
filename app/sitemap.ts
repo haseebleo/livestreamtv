@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getTrendingMovies, getTrendingShows } from "@/lib/api/tmdb";
+import { DRAMAS } from "@/lib/api/dramas";
 
 const BASE = "https://livestreamtv.pk";
 
@@ -14,6 +15,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/movies`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/tv-shows`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/live-tv`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE}/dramas`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE}/tv-schedule`, lastModified: now, changeFrequency: "hourly", priority: 0.88 },
     { url: `${BASE}/news`, lastModified: now, changeFrequency: "hourly", priority: 0.85 },
     { url: `${BASE}/standings`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/highlights`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
@@ -98,5 +101,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB unavailable — skip CMS pages
   }
 
-  return [...staticPages, ...moviePages, ...showPages, ...cmsPages];
+  // Drama pages — one per drama + one per episode
+  const dramaPages: MetadataRoute.Sitemap = DRAMAS.map((d) => ({
+    url: `${BASE}/dramas/${d.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.85,
+  }));
+
+  const episodePages: MetadataRoute.Sitemap = DRAMAS.flatMap((d) =>
+    Array.from({ length: d.totalEpisodes ?? 0 }, (_, i) => ({
+      url: `${BASE}/dramas/${d.slug}/episode/${i + 1}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }))
+  );
+
+  return [...staticPages, ...moviePages, ...showPages, ...dramaPages, ...episodePages, ...cmsPages];
 }
