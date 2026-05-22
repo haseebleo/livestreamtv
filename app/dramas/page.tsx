@@ -34,7 +34,7 @@ const CHANNEL_STYLES: Record<string, { color: string; bg: string; border: string
 function DramaCard({ drama }: { drama: Drama }) {
   const ch = CHANNEL_STYLES[drama.channel] ?? CHANNEL_STYLES["Geo"];
   return (
-    <Link href={`/dramas/${drama.slug}`} style={{ textDecoration: "none", display: "block" }}>
+    <Link href={`/watch/drama/${drama.slug}/episode/1`} style={{ textDecoration: "none", display: "block" }}>
       <div style={{ background: "#141422", border: "1px solid #1e1e2e", borderRadius: 14, overflow: "hidden", transition: "border-color 0.2s, transform 0.2s" }}>
         {/* Thumbnail */}
         <div style={{ position: "relative", paddingBottom: "56.25%", background: "#0d0d1a" }}>

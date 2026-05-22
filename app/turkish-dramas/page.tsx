@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { getTurkishDramas, POSTER } from "@/lib/api/tmdb";
+import { ContentCard } from "@/components/ui/content-card";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://livestreamtv.pk";
 
@@ -109,31 +109,17 @@ export default async function TurkishDramasPage({ searchParams }: PageProps) {
         {/* TMDB Turkish shows grid */}
         <section style={{ marginBottom: 40 }}>
           <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 20 }}>📺 All Turkish Series</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16 }}>
-            {shows.map((show: { id: number; name: string; poster_path: string | null; vote_average: number; first_air_date: string }) => {
-              const poster = POSTER(show.poster_path);
-              const year = show.first_air_date?.slice(0, 4);
-              return (
-                <Link key={show.id} href={`/tv-shows/${show.id}`} style={{ textDecoration: "none" }}>
-                  <div style={{ position: "relative", width: "100%", aspectRatio: "2/3", borderRadius: 10, overflow: "hidden", background: "#141422", border: "1px solid #1e1e2e", marginBottom: 8 }}>
-                    {poster ? (
-                      <Image src={poster} alt={show.name} fill style={{ objectFit: "cover" }} sizes="150px" />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, textAlign: "center", background: "linear-gradient(135deg,#080f1a,#05101f)" }}>
-                        <span style={{ fontSize: 28, marginBottom: 8 }}>🇹🇷</span>
-                        <span style={{ color: "#fff", fontSize: 10, fontWeight: 700, lineHeight: 1.3 }}>{show.name}</span>
-                      </div>
-                    )}
-                    <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.8)", borderRadius: 4, padding: "2px 5px", display: "flex", alignItems: "center", gap: 2 }}>
-                      <span style={{ color: "#f5c518", fontSize: 10 }}>★</span>
-                      <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{show.vote_average.toFixed(1)}</span>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{show.name}</p>
-                  {year && <p style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{year}</p>}
-                </Link>
-              );
-            })}
+          <div className="content-grid">
+            {shows.map((show: { id: number; name: string; poster_path: string | null; vote_average: number; first_air_date: string }) => (
+              <ContentCard
+                key={show.id}
+                title={show.name}
+                posterUrl={POSTER(show.poster_path)}
+                href={`/watch/movie/${show.id}`}
+                year={show.first_air_date?.slice(0, 4)}
+                rating={show.vote_average}
+              />
+            ))}
           </div>
         </section>
 

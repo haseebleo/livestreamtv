@@ -178,7 +178,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
                     const poster = POSTER(movie.poster_path);
                     const year = movie.release_date ? new Date(movie.release_date).getFullYear().toString() : "";
                     return (
-                      <Link key={movie.id} href={`/movies/${movie.id}`} style={{ textDecoration: "none" }} aria-label={movie.title}>
+                      <Link key={movie.id} href={`/watch/movie/${movie.id}`} style={{ textDecoration: "none" }} aria-label={movie.title}>
                         <div style={{ position: "relative", width: "100%", aspectRatio: "2/3", borderRadius: 10, overflow: "hidden", background: "#1c1c1c", border: "1px solid #2a2a2a", marginBottom: 8 }} className="card-hover">
                           {poster ? (
                             <Image src={poster} alt={movie.title} fill style={{ objectFit: "cover" }} sizes="(max-width: 640px) 50vw, 150px" />

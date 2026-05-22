@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { getPakistaniMovies, POSTER } from "@/lib/api/tmdb";
+import { ContentCard } from "@/components/ui/content-card";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://livestreamtv.pk";
 
@@ -72,34 +72,17 @@ export default async function PakistaniMoviesPage({ searchParams }: PageProps) {
             <p style={{ fontSize: 16 }}>Loading Pakistani movies…</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16, marginBottom: 40 }}>
-            {movies.map((movie: { id: number; title: string; poster_path: string | null; vote_average: number; release_date: string }) => {
-              const poster = POSTER(movie.poster_path);
-              const year = movie.release_date?.slice(0, 4);
-              return (
-                <Link key={movie.id} href={`/movies/${movie.id}`} style={{ textDecoration: "none" }}>
-                  <div style={{ position: "relative", width: "100%", aspectRatio: "2/3", borderRadius: 10, overflow: "hidden", background: "#141422", border: "1px solid #1e1e2e", marginBottom: 8 }}>
-                    {poster ? (
-                      <Image src={poster} alt={movie.title} fill style={{ objectFit: "cover" }} sizes="150px" />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, textAlign: "center", background: "linear-gradient(135deg,#0d1f0d,#0a1a10)" }}>
-                        <span style={{ fontSize: 28, marginBottom: 8 }}>🎬</span>
-                        <span style={{ color: "#fff", fontSize: 10, fontWeight: 700, lineHeight: 1.3 }}>{movie.title}</span>
-                      </div>
-                    )}
-                    <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.8)", borderRadius: 4, padding: "2px 5px", display: "flex", alignItems: "center", gap: 2 }}>
-                      <span style={{ color: "#f5c518", fontSize: 10 }}>★</span>
-                      <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{movie.vote_average.toFixed(1)}</span>
-                    </div>
-                    <div style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,130,60,0.85)", borderRadius: 4, padding: "2px 6px" }}>
-                      <span style={{ fontSize: 9, fontWeight: 700, color: "#fff" }}>🇵🇰 PK</span>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{movie.title}</p>
-                  {year && <p style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{year}</p>}
-                </Link>
-              );
-            })}
+          <div className="content-grid" style={{ marginBottom: 40 }}>
+            {movies.map((movie: { id: number; title: string; poster_path: string | null; vote_average: number; release_date: string }) => (
+              <ContentCard
+                key={movie.id}
+                title={movie.title}
+                posterUrl={POSTER(movie.poster_path)}
+                href={`/watch/movie/${movie.id}`}
+                year={movie.release_date?.slice(0, 4)}
+                rating={movie.vote_average}
+              />
+            ))}
           </div>
         )}
 

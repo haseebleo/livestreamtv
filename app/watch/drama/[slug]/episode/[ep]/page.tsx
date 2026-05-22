@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import { getDramaBySlug } from "@/lib/api/dramas";
 import { db } from "@/lib/db";
 import { StreamPlayer, type VideoServer } from "@/components/ui/stream-player";
+import { WatchlistButton } from "@/components/ui/watchlist-button";
+import { WatchTracker } from "@/components/ui/watch-tracker";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://livestreamtv.pk";
 
@@ -107,6 +109,14 @@ export default async function WatchDramaEpisodePage({
 
           {/* ── LEFT: Player ── */}
           <div>
+            <WatchTracker
+              id={`drama_${slug}_ep_${epNum}`}
+              title={drama.title}
+              posterUrl={drama.thumbnail}
+              href={`/watch/drama/${slug}/episode/${epNum}`}
+              type="drama"
+              episode={epNum}
+            />
             <StreamPlayer servers={servers} title={`${drama.title} Ep ${epNum}`} posterUrl={drama.thumbnail} />
 
             {/* Title + nav */}
@@ -120,6 +130,18 @@ export default async function WatchDramaEpisodePage({
               <h1 style={{ fontSize: "clamp(1.2rem, 3vw, 1.8rem)", fontWeight: 900, color: "#fff", marginBottom: 12 }}>
                 {drama.title} — Episode {epNum}
               </h1>
+
+              {/* Watchlist button */}
+              <div style={{ marginBottom: 14 }}>
+                <WatchlistButton
+                  id={`drama_${slug}`}
+                  title={drama.title}
+                  posterUrl={drama.thumbnail}
+                  href={`/watch/drama/${slug}/episode/1`}
+                  type="drama"
+                  style={{ fontSize: 13, padding: "8px 16px" }}
+                />
+              </div>
 
               {/* Prev / Next */}
               <div style={{ display: "flex", gap: 10 }}>

@@ -7,6 +7,8 @@ import { notFound } from "next/navigation";
 import { getMovieDetails, getSimilarMovies, POSTER, BACKDROP } from "@/lib/api/tmdb";
 import { db } from "@/lib/db";
 import { StreamPlayer, type VideoServer } from "@/components/ui/stream-player";
+import { WatchlistButton } from "@/components/ui/watchlist-button";
+import { WatchTracker } from "@/components/ui/watch-tracker";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://livestreamtv.pk";
 
@@ -109,6 +111,13 @@ export default async function WatchMoviePage({
 
           {/* ── LEFT: Player ── */}
           <div>
+            <WatchTracker
+              id={`movie_${id}`}
+              title={movie.title}
+              posterUrl={poster}
+              href={`/watch/movie/${id}`}
+              type="movie"
+            />
             <StreamPlayer servers={servers} title={movie.title} posterUrl={poster} />
 
             {/* Movie title under player */}
@@ -130,8 +139,23 @@ export default async function WatchMoviePage({
                 {movie.title}
               </h1>
               {movie.overview && (
-                <p style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.8 }}>{movie.overview}</p>
+                <p style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.8, marginBottom: 16 }}>{movie.overview}</p>
               )}
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <WatchlistButton
+                  id={`movie_${id}`}
+                  title={movie.title}
+                  posterUrl={poster}
+                  href={`/watch/movie/${id}`}
+                  type="movie"
+                  style={{ fontSize: 13, padding: "9px 18px" }}
+                />
+                <Link href={`/movies/${id}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, border: "1px solid #2a2a2a", background: "rgba(255,255,255,0.04)", color: "#9ca3af", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                  ℹ More Info
+                </Link>
+              </div>
             </div>
 
             <div className="ad-slot" style={{ height: 90, margin: "24px 0" }}>Advertisement</div>

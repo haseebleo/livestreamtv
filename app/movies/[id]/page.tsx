@@ -227,10 +227,27 @@ export default async function MovieDetailPage({ params }: PageProps) {
 
               {/* Overview */}
               {movie.overview && (
-                <p style={{ fontSize: 14, color: "#b3b3b3", lineHeight: 1.7, maxWidth: 640 }}>
+                <p style={{ fontSize: 14, color: "#b3b3b3", lineHeight: 1.7, maxWidth: 640, marginBottom: 24 }}>
                   {movie.overview}
                 </p>
               )}
+
+              {/* Watch Now button */}
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <Link
+                  href={`/watch/movie/${id}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#e50914", color: "#fff", padding: "14px 32px", borderRadius: 8, fontWeight: 800, fontSize: 16, textDecoration: "none", boxShadow: "0 0 24px rgba(229,9,20,0.4)" }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                  Watch Now — Free
+                </Link>
+                <Link
+                  href="/movies"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.07)", border: "1px solid #2a2a2a", color: "#d1d5db", padding: "14px 24px", borderRadius: 8, fontWeight: 700, fontSize: 15, textDecoration: "none" }}
+                >
+                  ← All Movies
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -318,7 +335,7 @@ export default async function MovieDetailPage({ params }: PageProps) {
                 }) => {
                   const p = POSTER(m.poster_path);
                   return (
-                    <Link key={m.id} href={`/movies/${m.id}`} className="poster-card" aria-label={m.title}>
+                    <Link key={m.id} href={`/watch/movie/${m.id}`} className="poster-card" aria-label={m.title}>
                       <div style={{ width: 150, height: 225, borderRadius: 10, overflow: "hidden", background: "#1c1c1c", border: "1px solid #2a2a2a", position: "relative" }}>
                         {p ? (
                           <Image src={p} alt={m.title} width={150} height={225} style={{ objectFit: "cover", width: "100%", height: "100%" }} sizes="150px" />

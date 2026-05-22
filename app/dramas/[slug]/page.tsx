@@ -153,6 +153,17 @@ export default async function DramaDetailPage({
                 {drama.synopsis}
               </p>
 
+              {/* Watch Now button */}
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+                <Link
+                  href={`/watch/drama/${drama.slug}/episode/1`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#e50914", color: "#fff", padding: "12px 28px", borderRadius: 8, fontWeight: 800, fontSize: 15, textDecoration: "none", boxShadow: "0 0 20px rgba(229,9,20,0.35)" }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                  Watch Episode 1
+                </Link>
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12, marginBottom: 20 }}>
                 {drama.totalEpisodes && (
                   <div style={{ background: "#141422", border: "1px solid #1e1e2e", borderRadius: 10, padding: "12px 16px" }}>
@@ -183,7 +194,7 @@ export default async function DramaDetailPage({
                   {Array.from({ length: drama.totalEpisodes }, (_, i) => i + 1).map((ep) => (
                     <Link
                       key={ep}
-                      href={`/dramas/${drama.slug}/episode/${ep}`}
+                      href={`/watch/drama/${drama.slug}/episode/${ep}`}
                       style={{
                         display: "flex",
                         alignItems: "center",

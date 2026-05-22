@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { getPopularMovies, getMoviesByGenre, MOVIE_GENRES, POSTER } from "@/lib/api/tmdb";
 import { JsonLd } from "@/components/seo/json-ld";
+import { ContentCard } from "@/components/ui/content-card";
 
 interface PageProps {
   searchParams: Promise<{ genre?: string; page?: string }>;
@@ -137,93 +137,23 @@ export default async function MoviesPage({ searchParams }: PageProps) {
           <div className="ad-slot" style={{ height: 90, marginBottom: 24 }}>Advertisement</div>
 
           {/* ── MOVIES GRID ── */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-              gap: 16,
-              marginBottom: 48,
-            }}
-          >
+          <div className="content-grid" style={{ marginBottom: 48 }}>
             {movies.map((movie: {
               id: number;
               title: string;
               poster_path: string | null;
               vote_average: number;
               release_date: string;
-            }) => {
-              const poster = POSTER(movie.poster_path);
-              const year = movie.release_date ? new Date(movie.release_date).getFullYear().toString() : "";
-              return (
-                <Link
-                  key={movie.id}
-                  href={`/movies/${movie.id}`}
-                  style={{ textDecoration: "none" }}
-                  aria-label={`${movie.title}${year ? ` (${year})` : ""}`}
-                >
-                  <div
-                    style={{
-                      position: "relative",
-                      width: "100%",
-                      aspectRatio: "2/3",
-                      borderRadius: 10,
-                      overflow: "hidden",
-                      background: "#1c1c1c",
-                      border: "1px solid #2a2a2a",
-                      marginBottom: 8,
-                      transition: "transform 0.2s",
-                    }}
-                    className="card-hover"
-                  >
-                    {poster ? (
-                      <Image
-                        src={poster}
-                        alt={movie.title}
-                        fill
-                        style={{ objectFit: "cover" }}
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 150px"
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: 12,
-                          textAlign: "center",
-                          background: `linear-gradient(135deg, hsl(${(movie.id * 47) % 360} 30% 15%), hsl(${(movie.id * 83) % 360} 30% 10%))`,
-                        }}
-                      >
-                        <span style={{ fontSize: 32, marginBottom: 8 }} aria-hidden="true">🎬</span>
-                        <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, lineHeight: 1.3 }}>{movie.title}</span>
-                      </div>
-                    )}
-                    {/* Rating badge */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: 6,
-                        right: 6,
-                        background: "rgba(0,0,0,0.75)",
-                        borderRadius: 4,
-                        padding: "2px 5px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                      }}
-                    >
-                      <span style={{ color: "#f5c518", fontSize: 10 }} aria-hidden="true">★</span>
-                      <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>{movie.vote_average.toFixed(1)}</span>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{movie.title}</p>
-                  {year && <p style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{year}</p>}
-                </Link>
-              );
-            })}
+            }) => (
+              <ContentCard
+                key={movie.id}
+                title={movie.title}
+                posterUrl={POSTER(movie.poster_path)}
+                href={`/watch/movie/${movie.id}`}
+                year={movie.release_date ? new Date(movie.release_date).getFullYear() : undefined}
+                rating={movie.vote_average}
+              />
+            ))}
           </div>
 
           {/* ── PAGINATION ── */}

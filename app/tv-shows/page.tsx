@@ -119,7 +119,7 @@ export default async function TvShowsPage({ searchParams }: PageProps) {
                   const poster = POSTER(show.poster_path);
                   const year = show.first_air_date ? new Date(show.first_air_date).getFullYear().toString() : "";
                   return (
-                    <Link key={show.id} href={`/tv-shows/${show.id}`} style={{ textDecoration: "none" }} aria-label={show.name}>
+                    <Link key={show.id} href={`/watch/movie/${show.id}`} style={{ textDecoration: "none" }} aria-label={show.name}>
                       <div style={{ position: "relative", width: "100%", aspectRatio: "2/3", borderRadius: 10, overflow: "hidden", background: "#1c1c1c", border: "1px solid #2a2a2a", marginBottom: 8, transition: "transform 0.2s" }} className="card-hover">
                         {poster ? (
                           <Image src={poster} alt={show.name} fill style={{ objectFit: "cover" }} sizes="(max-width: 640px) 50vw, 150px" />
@@ -172,7 +172,7 @@ export default async function TvShowsPage({ searchParams }: PageProps) {
                 const poster = POSTER(show.poster_path);
                 const year = show.first_air_date ? new Date(show.first_air_date).getFullYear().toString() : "";
                 return (
-                  <Link key={show.id} href={`/tv-shows/${show.id}`} style={{ textDecoration: "none" }} aria-label={show.name}>
+                  <Link key={show.id} href={`/watch/movie/${show.id}`} style={{ textDecoration: "none" }} aria-label={show.name}>
                     <div style={{ position: "relative", width: "100%", aspectRatio: "2/3", borderRadius: 10, overflow: "hidden", background: "#1c1c1c", border: "1px solid #2a2a2a", marginBottom: 8 }} className="card-hover">
                       {poster ? (
                         <Image src={poster} alt={show.name} fill style={{ objectFit: "cover" }} sizes="(max-width: 640px) 50vw, 150px" />

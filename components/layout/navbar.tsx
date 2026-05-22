@@ -6,20 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, Tv, Zap, Search } from "lucide-react";
 
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/cricket", label: "Cricket", icon: "🏏" },
-  { href: "/football", label: "Football", icon: "⚽" },
-  { href: "/movies", label: "Movies", icon: "🎬" },
-  { href: "/tv-shows", label: "TV Shows", icon: "📺" },
-  { href: "/live-tv", label: "Live TV", icon: "📡" },
-  { href: "/dramas", label: "Dramas", icon: "🎭" },
-  { href: "/pakistani-movies", label: "Pak Movies", icon: "🇵🇰" },
-  { href: "/bollywood", label: "Bollywood", icon: "🎬" },
-  { href: "/turkish-dramas", label: "Turkish", icon: "🇹🇷" },
-  { href: "/tv-schedule", label: "TV Schedule", icon: "📅" },
-  { href: "/news", label: "News", icon: "📰" },
-  { href: "/standings", label: "Standings", icon: "🏆" },
-  { href: "/highlights", label: "Highlights", icon: "🎬" },
+  { href: "/",                label: "Home" },
+  { href: "/movies",          label: "Movies" },
+  { href: "/dramas",          label: "Dramas" },
+  { href: "/bollywood",       label: "Bollywood" },
+  { href: "/turkish-dramas",  label: "Turkish" },
+  { href: "/korean-dramas",   label: "Korean" },
+  { href: "/live-tv",         label: "Live TV" },
+  { href: "/cricket",         label: "Cricket" },
+  { href: "/football",        label: "Football" },
+  { href: "/watchlist",       label: "Watchlist" },
 ];
 
 export default function Navbar() {
@@ -129,7 +125,6 @@ export default function Navbar() {
                     borderBottom: isActive ? "2px solid #e50914" : "2px solid transparent",
                   }}
                 >
-                  {link.icon && <span style={{ fontSize: 13 }} aria-hidden="true">{link.icon}</span>}
                   {link.label}
                 </Link>
               );
@@ -299,7 +294,6 @@ export default function Navbar() {
                     background: isActive ? "rgba(229,9,20,0.12)" : "transparent",
                   }}
                 >
-                  {link.icon && <span style={{ fontSize: 16 }} aria-hidden="true">{link.icon}</span>}
                   {link.label}
                 </Link>
               );
