@@ -1,7 +1,7 @@
 # Handoff — Link Update System Refactor
 
 ## Status
-Completed.
+Deployed to production (104.251.209.95) on 2026-05-29.
 
 ## Files Changed
 - `prisma/schema.prisma` — added `provider` column to `VideoLink` for source tracking.
@@ -34,13 +34,6 @@ WHERE provider != 'manual'
 ORDER BY "updatedAt" DESC;
 ```
 
-## How to Restart PM2
-```bash
-pm2 restart ecosystem.config.js
-# or
-pm2 restart all
-```
-
 ## Env Configuration (add to .env or PM2 env)
 ```
 TMDB_API_KEY=your_tmdb_key
@@ -59,7 +52,17 @@ VIDEO_LINK_API_URL=https://your-approved-api.example.com
 BROKEN_CHECK_BATCH_SIZE=100
 ```
 
+## Deployment Notes
+- Schema pushed and old `provider = 'auto'` records migrated to `'embed'`.
+- App rebuilt and restarted on server via `sudo pm2 restart saleoyepk`.
+- Initial broken-link check: **100 checked, 26 marked inactive** (old unauthorized embed URLs).
+
+## How to Restart PM2 (Server)
+```bash
+sudo pm2 restart saleoyepk
+```
+
 ## Pending TODOs
-- **Apply schema change** — run `npx prisma db push` (or `npm run db:push`) so the `provider` column is added to the database before the script runs.
 - **UI watch pages** still generate inline fallback embeds when DB links are empty. The cron now stores links correctly; removing hardcoded UI fallbacks is a separate frontend task.
 - **TV show episode query** — the watch page (`watch/movie/[id]`) does not query `VideoLink` by `season`/`episode` for TV shows. Episode links are stored in DB but not consumed by the UI yet.
+- **Configure legal embed providers** — set `EMBED_MOVIE_TEMPLATES` and `EMBED_TV_TEMPLATES` in `.env` to populate active links. Until then, the embed provider returns empty links (safe default) and old unauthorized links remain inactive.
