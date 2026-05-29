@@ -1,54 +1,76 @@
 /**
- * Daily sync: auto-populates VideoLink table with embed URLs for movies & TV shows.
- * Uses TMDB to discover popular/trending content, then inserts links from
- * multiple free embed providers (vidsrc.to, vidsrc.me, 2embed.cc, embed.su).
+ * Daily sync: auto-populates VideoLink table with embed URLs for movies, TV shows & dramas.
+ * Provider-based, env-configured, with broken-link checking.
  *
- * Run:   npx tsx scripts/sync-video-links.ts
- * Cron:  set up via PM2 ecosystem or server crontab (see README)
+ * Run full sync:   npx tsx scripts/sync-video-links.ts
+ * Check only:      npx tsx scripts/sync-video-links.ts --check-only
+ * Verbose mode:    npx tsx scripts/sync-video-links.ts --verbose
  */
+import { db } from "@/lib/db";
+import { getProviders, type VideoLinkProvider } from "@/lib/video-link-providers";
+import { DRAMAS } from "@/lib/api/dramas";
 
-import { PrismaClient } from "@prisma/client";
-
-const db = new PrismaClient();
-
-const TMDB_KEY = process.env.TMDB_API_KEY ?? "126ec8210dd7257e8bc3d34bd254a182";
+const TMDB_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE = "https://api.themoviedb.org/3";
+const CHECK_BATCH_SIZE = parseInt(process.env.BROKEN_CHECK_BATCH_SIZE ?? "100", 10);
 
-// ── Embed server templates ────────────────────────────────────────────────────
-
-const MOVIE_SERVERS = [
-  { name: "Server 1", url: (id: number) => `https://vidsrc.to/embed/movie/${id}` },
-  { name: "Server 2", url: (id: number) => `https://vidsrc.me/embed/movie?tmdb=${id}` },
-  { name: "Server 3", url: (id: number) => `https://www.2embed.cc/embed/${id}` },
-  { name: "Server 4", url: (id: number) => `https://embed.su/embed/movie/${id}` },
-];
-
-const SHOW_SERVERS = [
-  { name: "Server 1", url: (id: number, s: number, e: number) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
-  { name: "Server 2", url: (id: number, s: number, e: number) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}` },
-  { name: "Server 3", url: (id: number, s: number, e: number) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}` },
-  { name: "Server 4", url: (id: number, s: number, e: number) => `https://embed.su/embed/tv/${id}/${s}/${e}` },
-];
-
-// ── TMDB helper ───────────────────────────────────────────────────────────────
+const checkOnly = process.argv.includes("--check-only");
+const verbose = process.argv.includes("--verbose");
 
 async function tmdbGet(path: string, extra = "") {
+  if (!TMDB_KEY) throw new Error("TMDB_API_KEY not set");
   const url = `${TMDB_BASE}${path}?api_key=${TMDB_KEY}&language=en-US${extra}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`TMDB ${path} → ${res.status}`);
   return res.json() as Promise<any>;
 }
 
-// ── Movie sync ────────────────────────────────────────────────────────────────
+async function upsertLinks(
+  contentId: string,
+  contentType: string,
+  season: number,
+  episode: number,
+  provider: VideoLinkProvider,
+  links: Array<{ serverName: string; embedUrl: string; quality: string; lang: string }>
+) {
+  if (links.length === 0) return 0;
 
-async function syncMovies() {
-  const endpoints = [
-    "/movie/popular",
-    "/movie/now_playing",
-    "/movie/top_rated",
-    "/trending/movie/week",
-  ];
+  // Dedupe against any existing link (any provider, any source)
+  const existing = await db.videoLink.findMany({
+    where: { contentId, contentType, season, episode },
+    select: { embedUrl: true },
+  });
+  const seenUrls = new Set(existing.map((l) => l.embedUrl));
 
+  const newLinks = links
+    .filter((l) => !seenUrls.has(l.embedUrl))
+    .map((l, i) => ({
+      id: `auto_${provider.name}_${contentType}_${contentId}_s${season}e${episode}_${i}`,
+      contentId,
+      contentType,
+      season,
+      episode,
+      serverName: l.serverName,
+      embedUrl: l.embedUrl,
+      quality: l.quality,
+      lang: l.lang,
+      sortOrder: i,
+      provider: provider.name,
+      updatedAt: new Date(),
+    }));
+
+  if (newLinks.length === 0) return 0;
+  const result = await db.videoLink.createMany({ data: newLinks, skipDuplicates: true });
+  return result.count;
+}
+
+async function syncMovies(providers: VideoLinkProvider[]) {
+  const movieProviders = providers.filter((p) => p.supports("movie"));
+  if (movieProviders.length === 0) {
+    console.log("  [movies] No providers enabled, skipping.");
+    return;
+  }
+  const endpoints = ["/movie/popular", "/movie/now_playing", "/movie/top_rated", "/trending/movie/week"];
   let added = 0;
   const seen = new Set<number>();
 
@@ -62,47 +84,35 @@ async function syncMovies() {
         console.error(`  [skip] ${ep} page ${page}:`, e);
         continue;
       }
-
       for (const movie of results) {
         if (seen.has(movie.id)) continue;
         seen.add(movie.id);
-
         const contentId = String(movie.id);
-        const exists = await db.videoLink.count({ where: { contentId, contentType: "movie" } });
-        if (exists > 0) continue;
-
-        await db.videoLink.createMany({
-          data: MOVIE_SERVERS.map((srv, i) => ({
-            id: `auto_m_${movie.id}_${i}`,
-            contentId,
-            contentType: "movie",
-            episode: 0,
-            serverName: srv.name,
-            embedUrl: srv.url(movie.id),
-            quality: "HD",
-            lang: "Multi",
-            sortOrder: i,
-            updatedAt: new Date(),
-          })),
-          skipDuplicates: true,
-        });
-        added++;
+        for (const provider of movieProviders) {
+          const existing = await db.videoLink.count({
+            where: { contentId, contentType: "movie", provider: provider.name },
+          });
+          if (existing > 0) continue;
+          const links = await provider.generateLinks({ contentId, contentType: "movie", tmdbId: movie.id });
+          const count = await upsertLinks(contentId, "movie", 1, 0, provider, links);
+          added += count;
+          if (verbose && count > 0) {
+            console.log(`  [movies] +${count} from ${provider.name} for ${movie.title} (${movie.id})`);
+          }
+        }
       }
     }
   }
-
-  console.log(`  Movies: +${added} new (${seen.size} discovered)`);
+  console.log(`  Movies: +${added} new links (${seen.size} discovered)`);
 }
 
-// ── TV Show sync ──────────────────────────────────────────────────────────────
-
-async function syncShows() {
-  const endpoints = [
-    "/tv/popular",
-    "/tv/top_rated",
-    "/trending/tv/week",
-  ];
-
+async function syncShows(providers: VideoLinkProvider[]) {
+  const showProviders = providers.filter((p) => p.supports("show"));
+  if (showProviders.length === 0) {
+    console.log("  [shows] No providers enabled, skipping.");
+    return;
+  }
+  const endpoints = ["/tv/popular", "/tv/top_rated", "/trending/tv/week"];
   let addedShows = 0;
   let addedEpisodes = 0;
   const seen = new Set<number>();
@@ -117,70 +127,159 @@ async function syncShows() {
         console.error(`  [skip] ${ep} page ${page}:`, e);
         continue;
       }
-
       for (const show of results) {
         if (seen.has(show.id)) continue;
         seen.add(show.id);
-
-        // Check if show already has any links
-        const existingShow = await db.videoLink.count({
-          where: { contentId: String(show.id), contentType: "show" },
-        });
-        if (existingShow > 0) continue;
-
-        // Fetch show details to get season/episode counts
         let details: any;
         try {
           details = await tmdbGet(`/tv/${show.id}`);
         } catch {
           continue;
         }
-
         const seasons: any[] = (details.seasons ?? []).filter(
           (s: any) => s.season_number > 0 && s.episode_count > 0
         );
-
         for (const season of seasons) {
           const s = season.season_number;
-          const epCount = Math.min(season.episode_count, 50); // cap per season
-
+          const epCount = Math.min(season.episode_count, 50);
           for (let e = 1; e <= epCount; e++) {
-            await db.videoLink.createMany({
-              data: SHOW_SERVERS.map((srv, i) => ({
-                id: `auto_tv_${show.id}_s${s}e${e}_${i}`,
+            for (const provider of showProviders) {
+              const existing = await db.videoLink.count({
+                where: {
+                  contentId: String(show.id),
+                  contentType: "show",
+                  season: s,
+                  episode: e,
+                  provider: provider.name,
+                },
+              });
+              if (existing > 0) continue;
+              const links = await provider.generateLinks({
                 contentId: String(show.id),
                 contentType: "show",
+                tmdbId: show.id,
                 season: s,
                 episode: e,
-                serverName: srv.name,
-                embedUrl: srv.url(show.id, s, e),
-                quality: "HD",
-                lang: "Multi",
-                sortOrder: i,
-                updatedAt: new Date(),
-              })),
-              skipDuplicates: true,
-            });
-            addedEpisodes++;
+              });
+              const count = await upsertLinks(String(show.id), "show", s, e, provider, links);
+              addedEpisodes += count;
+            }
           }
         }
         addedShows++;
       }
     }
   }
-
   console.log(`  Shows: +${addedShows} new shows, +${addedEpisodes} episode links`);
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
+async function syncDramas(providers: VideoLinkProvider[]) {
+  const dramaProviders = providers.filter((p) => p.supports("drama"));
+  if (dramaProviders.length === 0) {
+    console.log("  [dramas] No providers enabled, skipping.");
+    return;
+  }
+  let added = 0;
+  for (const drama of DRAMAS) {
+    const total = drama.totalEpisodes ?? 0;
+    if (total === 0) continue;
+    for (let e = 1; e <= total; e++) {
+      for (const provider of dramaProviders) {
+        const existing = await db.videoLink.count({
+          where: { contentId: drama.slug, contentType: "drama", episode: e, provider: provider.name },
+        });
+        if (existing > 0) continue;
+        const links = await provider.generateLinks({
+          contentId: drama.slug,
+          contentType: "drama",
+          episode: e,
+          ytPlaylistId: drama.ytPlaylistId,
+        });
+        const count = await upsertLinks(drama.slug, "drama", 1, e, provider, links);
+        added += count;
+        if (verbose && count > 0) {
+          console.log(`  [dramas] +${count} from ${provider.name} for ${drama.slug} ep ${e}`);
+        }
+      }
+    }
+  }
+  console.log(`  Dramas: +${added} new episode links`);
+}
+
+async function checkBrokenLinks(providers: VideoLinkProvider[]) {
+  console.log("  [check] Starting broken-link check...");
+  const batch = await db.videoLink.findMany({
+    where: { provider: { not: "manual" } },
+    orderBy: { updatedAt: "asc" },
+    take: CHECK_BATCH_SIZE,
+  });
+  let checked = 0;
+  let broken = 0;
+  let reactivated = 0;
+
+  for (const link of batch) {
+    const provider = providers.find((p) => p.name === link.provider);
+    if (!provider) {
+      console.warn(`  [check] Unknown provider "${link.provider}" for ${link.id}, skipping.`);
+      continue;
+    }
+    const result = await provider.checkLink(link.embedUrl);
+    checked++;
+    if (!result.ok) {
+      if (link.isActive) {
+        await db.videoLink.update({
+          where: { id: link.id },
+          data: { isActive: false, updatedAt: new Date() },
+        });
+        broken++;
+      } else {
+        await db.videoLink.update({
+          where: { id: link.id },
+          data: { updatedAt: new Date() },
+        });
+      }
+      console.log(
+        `  [broken] ${link.provider} ${link.contentType} ${link.contentId} s${link.season}e${link.episode} → ${result.status ?? result.error}`
+      );
+    } else {
+      if (!link.isActive) {
+        await db.videoLink.update({
+          where: { id: link.id },
+          data: { isActive: true, updatedAt: new Date() },
+        });
+        reactivated++;
+      } else {
+        await db.videoLink.update({
+          where: { id: link.id },
+          data: { updatedAt: new Date() },
+        });
+      }
+    }
+  }
+  console.log(`  [check] ${checked} checked, ${broken} marked broken, ${reactivated} reactivated`);
+}
 
 async function main() {
   const start = Date.now();
-  console.log(`\n[${new Date().toISOString()}] Daily video-link sync starting...`);
+  console.log(`\n[${new Date().toISOString()}] Video-link sync starting...`);
+  const providers = getProviders();
+  console.log(`  Providers: ${providers.map((p) => p.name).join(", ") || "none"}`);
+
+  if (!TMDB_KEY) {
+    console.warn("  Warning: TMDB_API_KEY is not set. Movie/TV sync will be skipped.");
+  }
 
   try {
-    await syncMovies();
-    await syncShows();
+    if (!checkOnly) {
+      if (TMDB_KEY) {
+        await syncMovies(providers);
+        await syncShows(providers);
+      }
+      await syncDramas(providers);
+    } else {
+      console.log("  --check-only mode: skipping sync, checking broken links only.");
+    }
+    await checkBrokenLinks(providers);
   } catch (e) {
     console.error("Sync failed:", e);
     process.exitCode = 1;

@@ -10,7 +10,8 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "sync:videos": "tsx scripts/sync-video-links.ts"
+    "sync:videos": "tsx scripts/sync-video-links.ts",
+    "sync:videos:check": "tsx scripts/sync-video-links.ts --check-only"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.6",
